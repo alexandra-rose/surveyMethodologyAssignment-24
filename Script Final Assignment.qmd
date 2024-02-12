@@ -1,0 +1,278 @@
+---
+title: "Final Assignment"
+author: Sofia Villamil
+format: html
+editor: visual
+---
+
+# Final Assignment
+
+### LIBRARY
+
+```{r}
+rm(list = ls())
+library(haven)
+```
+
+### DATA SET
+
+```{r}
+data <- read_dta("Data/ZA7575.dta")
+
+```
+
+Diccionario
+
+```{r}
+library(writexl)
+library(sjlabelled)
+library(tidyverse)
+```
+
+```{r}
+
+variable_labels <- get_label(data)
+
+# Crear un data frame con los nombres de las variables y sus etiquetas
+variable_dictionary <- tibble(Variable = names(variable_labels),
+                              Label = variable_labels)
+# Pasarlo a un excel
+write_xlsx(variable_dictionary, "variable_dictionary.xlsx")
+```
+
+## CLEANING DATA
+
+```{r}
+summary(data$studyno2) # studyno1 and studyno2 simple identifier that has the same name # I would remove it
+```
+
+**I would remove this variables from the data set**
+
+-   studyno1
+
+-   studyno2
+
+-   doi
+
+-   version
+
+-   edition
+
+-   survey
+
+-   weights, we can add them later for regression. (w1:w86,wex)
+
+```{r}
+data_cleaning_1 <- select(data, -c(studyno1, studyno2, doi, version, edition,survey,w1:w86,wex))
+```
+
+```{r}
+data_cleaning_1 <- data_cleaning_1 %>%
+  select(
+    -c(
+      p13be, p13ee, p13es, p13fi, p13lu, p13lv, p13mt, 
+      cntry_de, eu6, eu9, eu10, eu12_1, eu12_2, eu_nms3, 
+      eu15, eu_nms10, eu25, eu_ac2, eu_cc3, euroz13, 
+      euronz13, eu_nms12, eu27, eu27b, eu_nms13, eu28, 
+      euroz15, euronz15, euroz16, euronz16, euroz17, 
+      eurnz17a, eurnz17b, euroz18, eurnz18a, eurnz18b, 
+      eurnz18c, euroz19, euronz19,
+      p2, p3, p3r, p4, p5
+    )
+  )
+
+
+```
+
+```{r}
+data_cleaning_2 <- data_cleaning_1 %>% 
+  select(serialid, everything())
+```
+
+#### Country
+
+```{r}
+# creating a variable for country name to be more organized
+data_cleaning_2$country_name <- NA
+
+
+data_cleaning_2$country_name[data_cleaning_2$q1_1 == 1] <- 'Bélgica'
+data_cleaning_2$country_name[data_cleaning_2$q1_2 == 1] <- 'Dinamarca'
+data_cleaning_2$country_name[data_cleaning_2$q1_3 == 1] <- 'Alemania'
+data_cleaning_2$country_name[data_cleaning_2$q1_4 == 1] <- 'Grecia'
+data_cleaning_2$country_name[data_cleaning_2$q1_5 == 1] <- 'España'
+data_cleaning_2$country_name[data_cleaning_2$q1_6 == 1] <- 'Francia'
+data_cleaning_2$country_name[data_cleaning_2$q1_7 == 1] <- 'Irlanda'
+data_cleaning_2$country_name[data_cleaning_2$q1_8 == 1] <- 'Italia'
+data_cleaning_2$country_name[data_cleaning_2$q1_9 == 1] <- 'Luxemburgo'
+data_cleaning_2$country_name[data_cleaning_2$q1_10 == 1] <- 'Países Bajos'
+data_cleaning_2$country_name[data_cleaning_2$q1_11 == 1] <- 'Portugal'
+data_cleaning_2$country_name[data_cleaning_2$q1_12 == 1] <- 'Reino Unido'
+data_cleaning_2$country_name[data_cleaning_2$q1_13 == 1] <- 'Austria'
+data_cleaning_2$country_name[data_cleaning_2$q1_14 == 1] <- 'Suecia'
+data_cleaning_2$country_name[data_cleaning_2$q1_15 == 1] <- 'Finlandia'
+data_cleaning_2$country_name[data_cleaning_2$q1_16 == 1] <- 'República de Chipre'
+data_cleaning_2$country_name[data_cleaning_2$q1_17 == 1] <- 'República Checa'
+data_cleaning_2$country_name[data_cleaning_2$q1_18 == 1] <- 'Estonia'
+data_cleaning_2$country_name[data_cleaning_2$q1_19 == 1] <- 'Hungría'
+data_cleaning_2$country_name[data_cleaning_2$q1_20 == 1] <- 'Letonia'
+data_cleaning_2$country_name[data_cleaning_2$q1_21 == 1] <- 'Lituania'
+data_cleaning_2$country_name[data_cleaning_2$q1_22 == 1] <- 'Malta'
+data_cleaning_2$country_name[data_cleaning_2$q1_23 == 1] <- 'Polonia'
+data_cleaning_2$country_name[data_cleaning_2$q1_24 == 1] <- 'Eslovaquia'
+data_cleaning_2$country_name[data_cleaning_2$q1_25 == 1] <- 'Eslovenia'
+data_cleaning_2$country_name[data_cleaning_2$q1_26 == 1] <- 'Bulgaria'
+data_cleaning_2$country_name[data_cleaning_2$q1_27 == 1] <- 'Rumanía'
+data_cleaning_2$country_name[data_cleaning_2$q1_28 == 1] <- 'Croacia'
+data_cleaning_2$country_name[data_cleaning_2$q1_29 == 1] <- 'Otros países'
+data_cleaning_2$country_name[data_cleaning_2$q1_30 == 1] <- 'DK'  # no idea what this is
+
+```
+
+```{r}
+data_cleaning_2 <- data_cleaning_2 %>% 
+  select(serialid,country_name, everything())
+# factor
+data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
+```
+
+Removing q1_1 to q1_30
+
+```{r}
+data_cleaning_3 <- select(data_cleaning_2, -c(q1_1:q1_30))
+
+```
+
+#### Age
+
+```{r}
+data_cleaning_3 %>%
+  summarise(MinAge = min(d11, na.rm = TRUE),
+            MaxAge = max(d11, na.rm = TRUE))
+
+```
+
+```{r}
+data_cleaning_3 <- data_cleaning_3 %>%
+  mutate(
+    d11r1_recoded = factor(d11r1, 
+                           labels = c("15 - 24", "25 - 39", "40 - 54", ">=55")),
+    d11r2_recoded = factor(d11r2, 
+                           labels = c("15 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", ">=65")),
+    d11r3_recoded = factor(d11r3, 
+                           labels = c("15 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", "65 - 74", ">=75"))
+  )
+
+```
+
+```{r}
+data_cleaning_4 <- select(data_cleaning_3, -c(d11r1,d11r2,d11r3))
+```
+
+Gender
+
+```{r}
+data_cleaning_4 <- data_cleaning_4 %>%
+  mutate(
+    gender = case_when(
+      d10 == 1 ~ "male",
+      d10 == 2 ~ "female"
+    ),
+    gender = factor(gender, levels = c("male", "female"))
+  )
+
+```
+
+#### Dependent Variable (qc19) - values are 1 for yes 2 for no and 3 for don t know (DK)
+
+```{r}
+#making binary variable
+
+data_cleaning_4$qc19_binary <- ifelse(data_cleaning_4$qc19 == 3, NA, data_cleaning_4$qc19)
+data_cleaning_4$qc19_binary <- factor(data_cleaning_4$qc19_binary,
+                                      levels = c(1, 2),
+                                      labels = c("yes", "no"))
+# dont know how we can approach the DK.
+#data_cleaning_4$qc19_factor <- factor(data_cleaning_4$qc19, levels = c(1, 2, 3),labels = c("yes", "no", "don't know"))
+
+class(data_cleaning_4$qc19_binary)
+```
+
+```{r}
+data_cleaning_5 <- data_cleaning_4 %>% 
+  select(serialid,qc19_binary,country_name,gender,d11, everything())
+```
+
+### Looking into the categorical variables.
+
+```{r}
+categorical_vars <- names(data_cleaning_5)[sapply(data_cleaning_5, function(x) is.factor(x) | is.character(x))]
+
+# Print the names of categorical variables
+print(categorical_vars)
+
+```
+
+```{r}
+categorical_vars <- c("country_name", "gender","isocntry","d11r1_recoded", "d11r2_recoded", "d11r3_recoded") # i took out the variable nuts becuase it was giving warning and its just a sigla.
+
+for(var in categorical_vars) {
+  cat("Chi-square test for:", var, "\n")
+  table <- table(data_cleaning_5[[var]], data_cleaning_5$qc19_binary)
+  test <- chisq.test(table)
+  print(test)
+}
+
+```
+
+All the variables tested show a statistically significant association with your dependent variable.
+
+-   "country_name", "gender","isocntry","d11r1_recoded", "d11r2_recoded", "d11r3_recoded"
+
+### Looking into the continuous variables.
+
+```{r}
+# getting all the numeric and integer variables in the dataset
+continuous_vars <- names(data_cleaning_5)[sapply(data_cleaning_5, function(x) is.numeric(x) | is.integer(x))]
+
+```
+
+```{r}
+# transform the binary factor variable to numeric for correlation analysis
+qc19_binary_numeric <- as.numeric(data_cleaning_5$qc19_binary) - 1
+
+
+```
+
+```{r}
+# empty vector to store names of variables
+non_significant_vars <- vector()
+
+# Loop through each of the continuous variables
+for(var in continuous_vars) {
+  #  correlation test
+  correlation_result <- cor.test(data_cleaning_5[[var]], qc19_binary_numeric, method = "pearson")
+  
+  # p-value is greater than 0.05 (non-significant)
+  if(correlation_result$p.value > 0.05) {
+    # add the variable name to the vector
+    non_significant_vars <- c(non_significant_vars, var)
+  }
+}
+
+# list of non-significant variables
+print("Non-significant variables:")
+print(non_significant_vars)
+
+```
+
+```{r}
+for(var in continuous_vars) {
+  relation_result <- cor.test(data_cleaning_5[[var]], qc19_binary_numeric, method = "pearson")
+  
+  # Extract and print specific components of the correlation result
+  cat("Correlation between", var, "and qc19_binary:\n")
+  cat("Correlation coefficient (r):", relation_result$estimate, "\n")
+  cat("P-value:", relation_result$p.value, "\n\n")
+}
+```
