@@ -46,7 +46,7 @@ write_xlsx(variable_dictionary, "variable_dictionary.xlsx")
 summary(data$studyno2) # studyno1 and studyno2 simple identifier that has the same name # I would remove it
 ```
 
-**I would remove this variables from the data set**
+**I would remove this variables from the data set as they are a reference id for the survey as a hole and not relevant in our analysis.**
 
 -   studyno1
 
@@ -76,13 +76,18 @@ data_cleaning_1 <- data_cleaning_1 %>%
       euronz13, eu_nms12, eu27, eu27b, eu_nms13, eu28, 
       euroz15, euronz15, euroz16, euronz16, euroz17, 
       eurnz17a, eurnz17b, euroz18, eurnz18a, eurnz18b, 
-      eurnz18c, euroz19, euronz19,
-      p2, p3, p3r, p4, p5
+      eurnz18c, euroz19, euronz19, p2, p3r, p4, p5
     )
   )
 
 
 ```
+
+The variables p2,p4,p3r,p4 and p5 where variable related to certain characteristics of the interview itself, we deemed them not relevant due to their context.
+
+The p13's variables where the language the interview was conducted with.
+
+The rest of the variables are related to the NATION GROUP, so we decided to take them out as we have other variables that seem to explain the same and be more relevant.
 
 ```{r}
 data_cleaning_2 <- data_cleaning_1 %>% 
@@ -94,7 +99,6 @@ data_cleaning_2 <- data_cleaning_1 %>%
 ```{r}
 # creating a variable for country name to be more organized
 data_cleaning_2$country_name <- NA
-
 
 data_cleaning_2$country_name[data_cleaning_2$q1_1 == 1] <- 'Bélgica'
 data_cleaning_2$country_name[data_cleaning_2$q1_2 == 1] <- 'Dinamarca'
@@ -132,6 +136,7 @@ data_cleaning_2$country_name[data_cleaning_2$q1_30 == 1] <- 'DK'  # no idea what
 ```{r}
 data_cleaning_2 <- data_cleaning_2 %>% 
   select(serialid,country_name, everything())
+
 # factor
 data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
 ```
@@ -186,21 +191,16 @@ data_cleaning_4 <- data_cleaning_4 %>%
 #### Dependent Variable (qc19) - values are 1 for yes 2 for no and 3 for don t know (DK)
 
 ```{r}
-#making binary variable
+#making multinominal variable
 
-data_cleaning_4$qc19_binary <- ifelse(data_cleaning_4$qc19 == 3, NA, data_cleaning_4$qc19)
-data_cleaning_4$qc19_binary <- factor(data_cleaning_4$qc19_binary,
-                                      levels = c(1, 2),
-                                      labels = c("yes", "no"))
-# dont know how we can approach the DK.
-#data_cleaning_4$qc19_factor <- factor(data_cleaning_4$qc19, levels = c(1, 2, 3),labels = c("yes", "no", "don't know"))
+data_cleaning_4$qc19_multinominal <- factor(data_cleaning_4$qc19, levels = c(1, 2, 3),labels = c("yes", "no", "don't know"))
 
-class(data_cleaning_4$qc19_binary)
+class(data_cleaning_4$qc19_multinominal)
 ```
 
 ```{r}
 data_cleaning_5 <- data_cleaning_4 %>% 
-  select(serialid,qc19_binary,country_name,gender,d11, everything())
+  select(serialid,qc19_multinominal,country_name,gender,d11, everything())
 ```
 
 ### Looking into the categorical variables.
@@ -218,7 +218,7 @@ categorical_vars <- c("country_name", "gender","isocntry","d11r1_recoded", "d11r
 
 for(var in categorical_vars) {
   cat("Chi-square test for:", var, "\n")
-  table <- table(data_cleaning_5[[var]], data_cleaning_5$qc19_binary)
+  table <- table(data_cleaning_5[[var]], data_cleaning_5$qc19_multinominal)
   test <- chisq.test(table)
   print(test)
 }
@@ -232,47 +232,67 @@ All the variables tested show a statistically significant association with your 
 ### Looking into the continuous variables.
 
 ```{r}
-# getting all the numeric and integer variables in the dataset
+# Getting all the numeric and integer variables in the dataset
 continuous_vars <- names(data_cleaning_5)[sapply(data_cleaning_5, function(x) is.numeric(x) | is.integer(x))]
-
 ```
 
 ```{r}
-# transform the binary factor variable to numeric for correlation analysis
-qc19_binary_numeric <- as.numeric(data_cleaning_5$qc19_binary) - 1
-
-
+library(parallel)
 ```
 
 ```{r}
-# empty vector to store names of variables
-non_significant_vars <- vector()
-
-# Loop through each of the continuous variables
-for(var in continuous_vars) {
-  #  correlation test
-  correlation_result <- cor.test(data_cleaning_5[[var]], qc19_binary_numeric, method = "pearson")
-  
-  # p-value is greater than 0.05 (non-significant)
-  if(correlation_result$p.value > 0.05) {
-    # add the variable name to the vector
-    non_significant_vars <- c(non_significant_vars, var)
-  }
+# Define the function to perform the Kruskal-Wallis test
+performTest <- function(var) {
+  formula <- as.formula(paste(var, "~ qc19_multinominal"))
+  testResult <- kruskal.test(formula, data = data_cleaning_5)
+  return(list(variable = var, p.value = testResult$p.value))
 }
 
-# list of non-significant variables
+# Detect the number of cores and set up a cluster
+no_cores <- detectCores() - 1
+cl <- makeCluster(no_cores)
+
+# Export the necessary variables and functions to the cluster
+clusterExport(cl, varlist = c("data_cleaning_5", "performTest"))
+
+# Perform the tests in parallel
+results <- parLapply(cl, continuous_vars, performTest)
+
+# Stop the cluster
+stopCluster(cl)
+```
+
+```{r}
+# Convert the list of results into a data frame
+results_df <- do.call(rbind, lapply(results, function(x) {
+  data.frame(Variable = x$variable, PValue = x$p.value, stringsAsFactors = FALSE)
+}))
+
+# Order the results by p-value
+results_df <- results_df[order(results_df$PValue), ]
+results_df
+```
+
+#### Significant
+
+```{r}
+# Create a vector for significant variables (p-value <= 0.05)
+significant_vars <- results_df$Variable[results_df$PValue <= 0.05]
+
+# Create a vector for non-significant variables (p-value > 0.05)
+non_significant_vars <- results_df$Variable[results_df$PValue > 0.05]
+
+# Print or use the vectors as needed
+print("Significant variables:")
+print(significant_vars)
+
+
+
+```
+
+#### Not Significant
+
+```{r}
 print("Non-significant variables:")
 print(non_significant_vars)
-
-```
-
-```{r}
-for(var in continuous_vars) {
-  relation_result <- cor.test(data_cleaning_5[[var]], qc19_binary_numeric, method = "pearson")
-  
-  # Extract and print specific components of the correlation result
-  cat("Correlation between", var, "and qc19_binary:\n")
-  cat("Correlation coefficient (r):", relation_result$estimate, "\n")
-  cat("P-value:", relation_result$p.value, "\n\n")
-}
 ```
