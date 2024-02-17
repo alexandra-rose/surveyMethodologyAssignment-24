@@ -7,16 +7,18 @@ editor: visual
 
 # Final Assignment
 
-### LIBRARY
+### Library
 
 ```{r}
 rm(list = ls())
 library(haven)
 ```
 
-### DATA SET
+### Data
 
 ```{r}
+setwd("C:/Users/sofia/OneDrive/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
+
 data <- read_dta("Data/ZA7575.dta")
 
 ```
@@ -37,10 +39,10 @@ variable_labels <- get_label(data)
 variable_dictionary <- tibble(Variable = names(variable_labels),
                               Label = variable_labels)
 # Pasarlo a un excel
-write_xlsx(variable_dictionary, "variable_dictionary.xlsx")
+#write_xlsx(variable_dictionary, "variable_dictionary.xlsx")
 ```
 
-## CLEANING DATA
+## Cleaning the data
 
 ```{r}
 summary(data$studyno2) # studyno1 and studyno2 simple identifier that has the same name # I would remove it
@@ -79,8 +81,6 @@ data_cleaning_1 <- data_cleaning_1 %>%
       eurnz18c, euroz19, euronz19, p2, p3r, p4, p5
     )
   )
-
-
 ```
 
 The variables p2,p4,p3r,p4 and p5 where variable related to certain characteristics of the interview itself, we deemed them not relevant due to their context.
@@ -149,13 +149,6 @@ data_cleaning_3 <- select(data_cleaning_2, -c(q1_1:q1_30))
 ```
 
 #### Age
-
-```{r}
-data_cleaning_3 %>%
-  summarise(MinAge = min(d11, na.rm = TRUE),
-            MaxAge = max(d11, na.rm = TRUE))
-
-```
 
 ```{r}
 data_cleaning_3 <- data_cleaning_3 %>%
@@ -270,7 +263,6 @@ results_df <- do.call(rbind, lapply(results, function(x) {
 
 # Order the results by p-value
 results_df <- results_df[order(results_df$PValue), ]
-results_df
 ```
 
 #### Significant
