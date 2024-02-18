@@ -3,6 +3,8 @@ title: "Final Assignment"
 author: Sofia Villamil
 format: html
 editor: visual
+editor_options: 
+  chunk_output_type: inline
 ---
 
 # Final Assignment
@@ -61,6 +63,10 @@ summary(data$studyno2) # studyno1 and studyno2 simple identifier that has the sa
 -   survey
 
 -   weights, we can add them later for regression. (w1:w86,wex)
+
+-   Comment Frederick: let's get rid of every variable from qa and qb we don't need them (they are on globalisation and trade or something)
+
+-   d71_1:qb9_12
 
 ```{r}
 data_cleaning_1 <- select(data, -c(studyno1, studyno2, doi, version, edition,survey,w1:w86,wex))
@@ -193,7 +199,7 @@ data_cleaning_4 <- data_cleaning_4 %>%
 ```{r}
 #making multinominal variable
 
-data_cleaning_4$qc19_multinominal <- factor(data_cleaning_4$qc19, levels = c(1, 2, 3),labels = c("yes", "no", "don't know"))
+data_cleaning_4$qc19_multinominal <- factor(data_cleaning_4$qc19, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
 
 class(data_cleaning_4$qc19_multinominal)
 ```
@@ -295,4 +301,128 @@ print(significant_vars)
 ```{r}
 print("Non-significant variables:")
 print(non_significant_vars)
+```
+
+## First look at association
+
+### Gender
+
+Assumption from literature –\> men less supportive than women
+
+```{r}
+qc19labels <- c("Yes", "No", "Don't know")
+names(qc19labels) <- c(1, 2, 3)
+
+
+data_cleaning_5 |>
+  mutate(d10 = as.factor(d10),
+         qc19_n = as.numeric(qc19),
+         qc19 = as.factor(qc19)) |> 
+  group_by(d10) |> 
+  mutate(gsumqc19 = sum(qc19_n)) |> 
+  ungroup() |> 
+  group_by(qc19, d10) |> 
+  mutate(gshare19 = (sum(qc19_n)/gsumqc19)*100) |> 
+  ungroup() |> 
+  ggplot(aes(x = qc19_multinominal, y = gshare19, fill = d10))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", gshare19))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme(legend.position = "bottom") +
+  labs(title = "Do you think that transgender persons should be able to change\ntheir civil documents to match their inner gender identity?",
+y = NULL,
+x = NULL,
+caption = "Source: Eurobarometer 91.4") +
+  scale_fill_manual(labels = c("Men", "Women"), values = c("blue", "red")) + 
+  guides(fill=guide_legend(title= ""))
+```
+
+### Binary conception of gender
+
+predictor of support of US sample
+
+operationalization using question 20 on if there should be a third gender option
+
+Table
+
+```{r}
+data_cleaning_5$qc20_multinominal <- factor(data_cleaning_4$qc20, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
+
+library(gmodels)
+CrossTable(data_cleaning_5$qc19_multinominal, data_cleaning_5$qc20_multinominal, 
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+Since the p-value is much smaller than the conventional significance level of 0.05, we reject the null hypothesis. This suggests that there is a significant association between the variables **`qc19`** and **`qc20`**.
+
+Very high convergence of people against a third gender option and rejecting
+
+88.29% of those against a third gender option also negate the option for transgender persons to change their gender in civil documents.
+
+Differences in binary gender conception –\> country differences
+
+country average against
+
+```{r}
+library(patchwork)
+library(scales)
+
+plot_binary_1 <-
+  data_cleaning_5 |> 
+  group_by(country_name) |> 
+  summarise(share_no = mean(qc20 == 2, na.rm = TRUE)*100) |> 
+  arrange(desc(share_no)) |> 
+  mutate(country_name = factor(country_name, levels = country_name)) |>
+  filter(country_name != "Otros países") |> 
+ggplot(aes(x = country_name, y = share_no)) +
+  geom_col(fill = "red") +
+  labs(x = "",
+       y = "") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.margin = margin(0, 0, 0, 0))  +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_text((aes(label = sprintf("%.1f%%", share_no))),vjust = -0.5, size = 2)  +
+  annotate("text", x = 9.5, y = 70, 
+           label = "Do you think that transgender persons should be able to change\ntheir civil documents to match their inner gender identity?",
+           hjust = 0, vjust = 0.5, size = 3, color = "black") +
+  geom_rect(aes(xmin = 9.3, xmax = 24.3, 
+                ymin = 64, ymax = 75),
+                fill = "transparent", color = "black", linewidth = 1)
+
+plot_binary_2 <- 
+  data_cleaning_5 |> 
+  group_by(country_name) |> 
+  summarise(share_no = mean(qc19 == 2, na.rm = TRUE)*100) |> 
+  arrange(desc(share_no)) |> 
+  mutate(country_name = factor(country_name, levels = country_name)) |>
+  filter(country_name != "Otros países") |> 
+ggplot(aes(x = country_name, y = share_no)) +
+  geom_col(fill = "red") +
+  labs(x = "",
+       y = "") +
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 90, hjust= 0),
+        plot.margin = margin(-10, 0, 0, 0)) +
+  scale_x_discrete(position = "top") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_text((aes(label = sprintf("%.1f%%", share_no))), vjust = -0.5, size = 2)  +
+  annotate("text", x = 10, y = 65, 
+           label = "Do you believe that official documents, like passports and birth\ncertificates, should have a third option, such as X or O (other)\nbeside male (M) and female (F)for those persons who do not\nidentify as female and male?",
+           hjust = 0, vjust = 0.5, size = 3, color = "black") +
+  geom_rect(aes(xmin = 9.8, xmax = 24.4, 
+                ymin = 56, ymax = 73),
+                fill = "transparent", color = "black", linewidth = 1)
+```
+
+```{r}
+#| echo: false
+#| layout-ncol: 1
+
+plot_binary_1
+plot_binary_2
 ```
