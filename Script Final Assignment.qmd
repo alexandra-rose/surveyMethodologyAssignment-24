@@ -19,7 +19,7 @@ library(haven)
 ### Data
 
 ```{r}
-setwd("C:/Users/sofia/OneDrive/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
+#setwd("C:/Users/sofia/OneDrive/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 
 data <- read_dta("Data/ZA7575.dta")
 
@@ -70,6 +70,12 @@ summary(data$studyno2) # studyno1 and studyno2 simple identifier that has the sa
 
 -   d71_1:qb9_12
 
+-   I kept the following variables
+
+    -   QA5a: Question on globalisation
+
+    -   QA6: Question on what will affect jobs in the coming years (immigration option might be interesting)
+
 ```{r}
 data_cleaning_1 <- select(data, -c(studyno1, studyno2, doi, version, edition,survey,w1:w86,wex))
 ```
@@ -77,14 +83,14 @@ data_cleaning_1 <- select(data, -c(studyno1, studyno2, doi, version, edition,sur
 ```{r}
 data_cleaning_1 <- data_cleaning_1 %>%
   select(
-    -c(
+         -c(
       p13be, p13ee, p13es, p13fi, p13lu, p13lv, p13mt, 
       cntry_de, eu6, eu9, eu10, eu12_1, eu12_2, eu_nms3, 
       eu15, eu_nms10, eu25, eu_ac2, eu_cc3, euroz13, 
       euronz13, eu_nms12, eu27, eu27b, eu_nms13, eu28, 
       euroz15, euronz15, euroz16, euronz16, euroz17, 
       eurnz17a, eurnz17b, euroz18, eurnz18a, eurnz18b, 
-      eurnz18c, euroz19, euronz19, p2, p3r, p4, p5
+      eurnz18c, euroz19, euronz19, p2, p3r, p4, p5, d71_1:qa4b_8, qa5b_1:qa5b_13, qa7:qb9_12
     )
   )
 ```
@@ -288,6 +294,18 @@ print(significant_vars)
 
 ```
 
+That's the code that helps subset the data set based on the significant variables.
+
+```{r}
+non_zero_vars <- non_zero_vars[-1] 
+
+non_zero_vars
+
+df_schools_final <- 
+  df_schools_e |>  
+  dplyr::select(all_of(non_zero_vars), n_schools, income_per_capita)
+```
+
 #### Not Significant
 
 ```{r}
@@ -359,6 +377,8 @@ Differences in binary gender conception –\> country differences
 
 country average against
 
+##### Indicate that it's only the nos
+
 ```{r}
 library(patchwork)
 library(scales)
@@ -380,10 +400,10 @@ ggplot(aes(x = country_name, y = share_no)) +
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   geom_text((aes(label = sprintf("%.1f%%", share_no))),vjust = -0.5, size = 2)  +
   annotate("text", x = 9.5, y = 70, 
-           label = "Do you think that transgender persons should be able to change\ntheir civil documents to match their inner gender identity?",
+           label = "Share of 'No' responses to qc19:\nDo you think that transgender persons should be able to change\ntheir civil documents to match their inner gender identity?",
            hjust = 0, vjust = 0.5, size = 3, color = "black") +
   geom_rect(aes(xmin = 9.3, xmax = 24.3, 
-                ymin = 64, ymax = 75),
+                ymin = 62, ymax = 77),
                 fill = "transparent", color = "black", linewidth = 1)
 
 plot_binary_2 <- 
@@ -404,11 +424,13 @@ ggplot(aes(x = country_name, y = share_no)) +
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   geom_text((aes(label = sprintf("%.1f%%", share_no))), vjust = -0.5, size = 2)  +
   annotate("text", x = 10, y = 65, 
-           label = "Do you believe that official documents, like passports and birth\ncertificates, should have a third option, such as X or O (other)\nbeside male (M) and female (F)for those persons who do not\nidentify as female and male?",
+           label = "Share of 'No' responses to qc20:\nDo you believe that official documents, like passports and birth\ncertificates, should have a third option, such as X or O (other)\nbeside male (M) and female (F)for those persons who do not\nidentify as female and male?",
            hjust = 0, vjust = 0.5, size = 3, color = "black") +
-  geom_rect(aes(xmin = 9.8, xmax = 24.4, 
-                ymin = 56, ymax = 73),
+  geom_rect(aes(xmin = 9.8, xmax = 24.6, 
+                ymin = 53, ymax = 76),
                 fill = "transparent", color = "black", linewidth = 1)
+
+plot_binary_2
 ```
 
 ```{r}
