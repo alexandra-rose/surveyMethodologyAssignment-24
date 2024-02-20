@@ -7,26 +7,40 @@ editor: visual
 
 # Final Assignment
 
+CHALLENGE
+
+The assignment has two primary objectives:
+
+1\. Explaining Cross-Country Differences in Support Levels: This aspect involves analyzing the data to understand why different countries exhibit varying levels of support for transgender individuals obtaining official documents (cq19 in the questionnare). Individual-level indicators need to be complemented with country-level factors such as cultural norms, legal systems, history, economic-related variables, and societal views on LGBTI rights.
+
+2.  Developing a Predictive Model for Other Countries This task involves building a model to predict support for transgender individuals changing civil documents to align with their gender identity. By using factors identified in the first part of the assignment, machine learning techniques will be applied to forecast support levels based on observed trends. To ensure the model’s accuracy and reliability, it must undergo thorough calibration and validation. Key steps in this process include selecting relevant features (variables), choosing an appropriate modeling method (such as regression analysis, decision trees, neural networks, etc.), training the model with survey data, and subsequently testing its predictions against known outcomes. A thorough understanding of the data, expertise in data analysis and statistical modeling, along with a deep awareness of the complexities surrounding LGBTI rights, are essential for successfully completing this assignment.
+
+Target variable: qc19 (support for changing gender on documents)
+
+ASSIGMENT SUBMISSION GUIDELINES Teams are responsible for assembling a comprehensive package for submission. This package must include:
+
+• Code: Complete and well-documented source code developed for the project. • Narrative Explanation: A detailed narrative of the work, not exceeding four pages (excluding references).
+
+This narrative should articulate the reasoning behind strategic choices, describe the challenges encountered and how they were overcome, and present/discuss the main results. The completed package must be uploaded to the designated task on Aula Global.
+
 ### LIBRARY
 
 ```{r}
 rm(list = ls())
 library(haven)
+library(writexl)
+library(sjlabelled)
+library(tidyverse)
+library(corrplot)
+library(dplyr)
+
 ```
 
 ### DATA SET
 
 ```{r}
-data <- read_dta("Data/ZA7575.dta")
+data <- read_dta("./ZA7575.dta")
 
-```
-
-Diccionario
-
-```{r}
-library(writexl)
-library(sjlabelled)
-library(tidyverse)
 ```
 
 ```{r}
@@ -80,7 +94,6 @@ data_cleaning_1 <- data_cleaning_1 %>%
       p2, p3, p3r, p4, p5
     )
   )
-
 
 ```
 
@@ -275,4 +288,64 @@ for(var in continuous_vars) {
   cat("Correlation coefficient (r):", relation_result$estimate, "\n")
   cat("P-value:", relation_result$p.value, "\n\n")
 }
+```
+
+## CORRELATION BETWEEN VARIABLES
+
+```{r}
+complete_data <- data_cleaning_5 |> 
+  select(-non_significant_vars) |> 
+  select(-c(qa1:qb9_12)) |> 
+  mutate_if(is.character, as.numeric)
+
+target_columns <- c("qc19", "qc20")
+
+# Convert target_columns to numeric
+complete_data[target_columns] <- lapply(complete_data[target_columns], as.numeric)
+
+# Filter out rows with missing values in target columns
+complete_data <- complete_data[complete.cases(complete_data[target_columns]), ]
+
+
+
+#defining columns that will work for the correlation matrix
+numeric_cols <- complete_data[numeric_columns]
+
+# Determine the number of columns in complete_data
+num_cols <- ncol(numeric_cols)
+
+# Calculate the number of columns in each subset (assuming you want approximately equal splits)
+subset_size <- ceiling(num_cols / 6)
+
+# Split complete_data into three subsets
+subset_1 <- numeric_cols[, 1:subset_size]
+subset_2 <- numeric_cols[, (subset_size + 1):(2 * subset_size)]
+subset_3 <- numeric_cols[, (2 * subset_size + 1):(3 * subset_size)]
+subset_4 <- numeric_cols[, (3 * subset_size + 1):(4 * subset_size)]
+subset_5 <- numeric_cols[, (4 * subset_size + 1):(5 * subset_size)]
+subset_6 <- numeric_cols[, (5 * subset_size + 1):num_cols]
+
+#1
+cor_matrix1 <- cor(complete_data[target_columns], subset_1, use = "pairwise.complete.obs")
+corr1 <- corrplot(cor_matrix1, method = "circle", tl.col = "black", tl.srt = 45)
+
+#2
+cor_matrix2 <- cor(complete_data[target_columns], subset_2, use = "pairwise.complete.obs")
+corr2 <- corrplot(cor_matrix2, method = "circle", tl.col = "black", tl.srt = 45)
+
+#3
+cor_matrix3 <- cor(complete_data[target_columns], subset_3, use = "pairwise.complete.obs")
+corr3 <- corrplot(cor_matrix3, method = "circle", tl.col = "black", tl.srt = 45)
+
+#4
+cor_matrix4 <- cor(complete_data[target_columns], subset_4, use = "pairwise.complete.obs")
+corr4 <- corrplot(cor_matrix4, method = "circle", tl.col = "black", tl.srt = 45)
+
+#5
+cor_matrix5 <- cor(complete_data[target_columns], subset_5, use = "pairwise.complete.obs")
+corr5 <- corrplot(cor_matrix5, method = "circle", tl.col = "black", tl.srt = 45)
+
+#6
+cor_matrix6 <- cor(complete_data[target_columns], subset_6, use = "pairwise.complete.obs")
+corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
 ```
