@@ -41,7 +41,7 @@ library(dplyr)
 ### Data
 
 ```{r}
-data <- read_dta("./ZA7575.dta")
+data <- read_dta("Data/ZA7575.dta")
 
 ```
 
@@ -225,7 +225,6 @@ data_cleaning_5 <- data_cleaning_4 %>%
 ```{r}
 categorical_vars <- names(data_cleaning_5)[sapply(data_cleaning_5, function(x) is.factor(x) | is.character(x))]
 
-# Print the names of categorical variables
 print(categorical_vars)
 
 ```
@@ -253,6 +252,8 @@ All the variables tested show a statistically significant association with your 
 continuous_vars <- names(data_cleaning_5)[sapply(data_cleaning_5, function(x) is.numeric(x) | is.integer(x))]
 ```
 
+As it was taking too much time, I found this why online to do it with cluster
+
 ```{r}
 library(parallel)
 ```
@@ -275,7 +276,6 @@ clusterExport(cl, varlist = c("data_cleaning_5", "performTest"))
 # Perform the tests in parallel
 results <- parLapply(cl, continuous_vars, performTest)
 
-# Stop the cluster
 stopCluster(cl)
 ```
 
@@ -309,6 +309,8 @@ print(significant_vars)
 That's the code that helps subset the data set based on the significant variables.
 
 ```{r}
+
+#this code is not working!!
 non_zero_vars <- non_zero_vars[-1] 
 
 non_zero_vars
@@ -327,7 +329,7 @@ print(non_significant_vars)
 
 ## First look at association
 
-### Gender
+### Gender (I have a question about this sofi)
 
 Assumption from literature –\> men less supportive than women
 
@@ -459,16 +461,15 @@ plot_binary_2
 complete_data <- data_cleaning_5 |> 
   select(-non_significant_vars) |> 
   select(-c(qa1:qb9_12)) |> 
-  mutate_if(is.character, as.numeric)
+  mutate_if(is.character, as.numeric) # why this??
 
-target_columns <- c("qc19", "qc20")
+target_columns <- c("qc19", "qc20") # why are two target variables?? Sofi
 
 # Convert target_columns to numeric
 complete_data[target_columns] <- lapply(complete_data[target_columns], as.numeric)
 
 # Filter out rows with missing values in target columns
 complete_data <- complete_data[complete.cases(complete_data[target_columns]), ]
-
 
 
 #defining columns that will work for the correlation matrix
