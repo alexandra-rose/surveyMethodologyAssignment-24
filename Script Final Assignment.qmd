@@ -27,7 +27,6 @@ This narrative should articulate the reasoning behind strategic choices, describ
 
 ### LIBRARY
 
-
 ```{r}
 rm(list = ls())
 library(haven)
@@ -107,7 +106,6 @@ data_cleaning_1 <- data_cleaning_1 %>%
     )
   )
 ```
-
 
 The variables p2,p4,p3r,p4 and p5 where variable related to certain characteristics of the interview itself, we deemed them not relevant due to their context.
 
@@ -513,4 +511,32 @@ corr5 <- corrplot(cor_matrix5, method = "circle", tl.col = "black", tl.srt = 45)
 #6
 cor_matrix6 <- cor(complete_data[target_columns], subset_6, use = "pairwise.complete.obs")
 corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
+```
+
+COUNTRY LEVEL VARIABLES (EXTRA)
+
+```{r}
+library(haven)
+data_extra_by_Country <- read_dta("Data/Extra Data.dta")
+all_na_columns <- sapply(data_extra_by_Country, function(x) all(is.na(x)))
+
+# There are columns all NA because I filtered in stata for the year and for each country certain variables that where interesting
+
+columns_to_remove <- names(data_extra_by_Country)[all_na_columns]
+
+# remove the columns
+data_extra_by_Country <- data_extra_by_Country[, !all_na_columns]
+
+# dataframe of all the variables for 2019 related to legal or political views of most of the countries in the world
+names(data_extra_by_Country)
+
+
+# Save the dataframe as a CSV file
+# write.csv(data_extra_by_Country, "Data/data_extra_by_Country.csv", row.names = FALSE)
+
+```
+
+```{r}
+# merged_df <- merge(data_cleaning_5, data_extra_by_Country, by = "country_name", all.x = TRUE)
+# hay un error que tengo que ver
 ```
