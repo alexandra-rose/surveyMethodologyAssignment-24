@@ -212,7 +212,6 @@ data_cleaning_4 <- data_cleaning_4 %>%
 
 data_cleaning_4$qc19_multinominal <- factor(data_cleaning_4$qc19, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
 
-class(data_cleaning_4$qc19_multinominal)
 ```
 
 ```{r}
@@ -302,22 +301,6 @@ non_significant_vars <- results_df$Variable[results_df$PValue > 0.05]
 print("Significant variables:")
 print(significant_vars)
 
-
-
-```
-
-That's the code that helps subset the data set based on the significant variables.
-
-```{r}
-
-#this code is not working!!
-non_zero_vars <- non_zero_vars[-1] 
-
-non_zero_vars
-
-df_schools_final <- 
-  df_schools_e |>  
-  dplyr::select(all_of(non_zero_vars), n_schools, income_per_capita)
 ```
 
 #### Not Significant
@@ -329,14 +312,13 @@ print(non_significant_vars)
 
 ## First look at association
 
-### Gender (I have a question about this sofi)
+### Gender
 
 Assumption from literature –\> men less supportive than women
 
 ```{r}
 qc19labels <- c("Yes", "No", "Don't know")
 names(qc19labels) <- c(1, 2, 3)
-
 
 data_cleaning_5 |>
   mutate(d10 = as.factor(d10),
@@ -455,7 +437,7 @@ plot_binary_1
 plot_binary_2
 ```
 
-## CORRELATION BETWEEN VARIABLES
+## Correlation between the significant numeric variables (this does not work)
 
 ```{r}
 complete_data <- data_cleaning_5 |> 
@@ -514,7 +496,56 @@ cor_matrix6 <- cor(complete_data[target_columns], subset_6, use = "pairwise.comp
 corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
 ```
 
-COUNTRY LEVEL VARIABLES (EXTRA)
+I changed the code and for me this works.
+
+```{r}
+complete_data <- data_cleaning_5 %>%
+  select(all_of(significant_vars)) 
+
+# Recalculate num_cols because it's just an integer, not data
+num_cols <- ncol(complete_data)
+
+# Calculate the number of columns in each subset (for approximately equal splits)
+subset_size <- ceiling(num_cols / 6)
+
+# Correctly create subsets based on columns
+subset_1 <- complete_data[, 1:subset_size]
+subset_2 <- complete_data[, (subset_size + 1):(2 * subset_size)]
+subset_3 <- complete_data[, (2 * subset_size + 1):(3 * subset_size)]
+subset_4 <- complete_data[, (3 * subset_size + 1):(4 * subset_size)]
+subset_5 <- complete_data[, (4 * subset_size + 1):(5 * subset_size)]
+subset_6 <- complete_data[, (5 * subset_size + 1):num_cols]
+
+
+
+#1
+cor_matrix1 <- cor(subset_1)
+corrplot(cor_matrix1, method = "circle", tl.col = "black", tl.srt = 45)
+
+#2
+cor_matrix2 <- cor(subset_2)
+corrplot(cor_matrix2, method = "circle", tl.col = "black", tl.srt = 45)
+
+#3
+cor_matrix3 <- cor(subset_3)
+corr3 <- corrplot(cor_matrix3, method = "circle", tl.col = "black", tl.srt = 45)
+
+#4
+cor_matrix4 <- cor(subset_4)
+corr4 <- corrplot(cor_matrix4, method = "circle", tl.col = "black", tl.srt = 45)
+
+#5
+cor_matrix5 <- cor(subset_5)
+corr5 <- corrplot(cor_matrix5, method = "circle", tl.col = "black", tl.srt = 45)
+
+#6
+cor_matrix6 <- cor(subset_6)
+corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
+
+
+```
+
+### COUNTRY LEVEL VARIABLES (EXTRA)
 
 ```{r}
 library(haven)
@@ -531,13 +562,52 @@ data_extra_by_Country <- data_extra_by_Country[, !all_na_columns]
 # dataframe of all the variables for 2019 related to legal or political views of most of the countries in the world
 names(data_extra_by_Country)
 
-
 # Save the dataframe as a CSV file
-# write.csv(data_extra_by_Country, "Data/data_extra_by_Country.csv", row.names = FALSE)
+# write.csv(data_extra_by_Country, "data_extra_by_Country.csv", row.names = FALSE)
+```
+
+```{r}
+country_name_mapping_reverse <- c(
+  'Belgium' = 'Bélgica',
+  'Denmark' = 'Dinamarca',
+  'Germany' = 'Alemania',
+  'Greece' = 'Grecia',
+  'Spain' = 'España',
+  'France' = 'Francia',
+  'Ireland' = 'Irlanda',
+  'Italy' = 'Italia',
+  'Luxembourg' = 'Luxemburgo',
+  'Netherlands' = 'Países Bajos',
+  'Portugal' = 'Portugal',
+  'United Kingdom' = 'Reino Unido',
+  'Austria' = 'Austria',
+  'Sweden' = 'Suecia',
+  'Finland' = 'Finlandia',
+  'Cyprus' = 'República de Chipre',
+  'Czech Republic' = 'República Checa',
+  'Estonia' = 'Estonia',
+  'Hungary' = 'Hungría',
+  'Latvia' = 'Letonia',
+  'Lithuania' = 'Lituania',
+  'Malta' = 'Malta',
+  'Poland' = 'Polonia',
+  'Slovakia' = 'Eslovaquia',
+  'Slovenia' = 'Eslovenia',
+  'Bulgaria' = 'Bulgaria',
+  'Romania' = 'Rumanía',
+  'Croatia' = 'Croacia'
+  # Note: 'Otros países' and 'DK' are specific to data_cleaning_2 and may not have direct mappings.
+)
+
 
 ```
 
 ```{r}
-# merged_df <- merge(data_cleaning_5, data_extra_by_Country, by = "country_name", all.x = TRUE)
-# hay un error que tengo que ver
+data_extra_by_Country$country_name <- country_name_mapping_reverse[data_extra_by_Country$country_name]
+
+```
+
+```{r}
+merged_df <- merge(data_cleaning_5, data_extra_by_Country, by = "country_name", all.x = TRUE)
+
 ```
