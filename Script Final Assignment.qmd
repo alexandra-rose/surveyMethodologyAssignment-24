@@ -25,10 +25,14 @@ ASSIGMENT SUBMISSION GUIDELINES Teams are responsible for assembling a comprehen
 
 This narrative should articulate the reasoning behind strategic choices, describe the challenges encountered and how they were overcome, and present/discuss the main results. The completed package must be uploaded to the designated task on Aula Global.
 
-### LIBRARY
+### Libraries
 
 ```{r}
 rm(list = ls())
+```
+
+```{r}
+
 library(haven)
 library(writexl)
 library(sjlabelled)
@@ -43,67 +47,23 @@ library(scales)
 
 ```{r}
 data <- read_dta("./Data/ZA7575.dta")
-
-```
-
-```{r}
-
-variable_labels <- get_label(data)
-
-# Crear un data frame con los nombres de las variables y sus etiquetas
-variable_dictionary <- tibble(Variable = names(variable_labels),
-                              Label = variable_labels)
-# Pasarlo a un excel
-#write_xlsx(variable_dictionary, "variable_dictionary.xlsx")
 ```
 
 ## Cleaning the data
 
-```{r}
-summary(data$studyno2) # studyno1 and studyno2 simple identifier that has the same name # I would remove it
-```
-
-**I would remove this variables from the data set as they are a reference id for the survey as a hole and not relevant in our analysis.**
-
--   studyno1
-
--   studyno2
-
--   doi
-
--   version
-
--   edition
-
--   survey
-
--   weights, we can add them later for regression. (w1:w86,wex)
-
--   Comment Frederick: let's get rid of every variable from qa and qb we don't need them (they are on globalisation and trade or something)
-
--   d71_1:qb9_12
-
--   I kept the following variables
-
-    -   QA5a: Question on globalisation
-
-    -   QA6: Question on what will affect jobs in the coming years (immigration option might be interesting)
+/////The first step is looking into the data set and removing variables that we found were not important for our analisis.
 
 ```{r}
-data_cleaning_1 <- select(data, -c(studyno1, studyno2, doi, version, edition,survey,w1:w86,wex))
-```
-
-```{r}
-data_cleaning_1 <- data_cleaning_1 %>%
+data_cleaning_1 <- data %>%
   select(
-         -c(
+         -c(studyno1, studyno2, doi, version, edition,survey,w1:w86,wex,
       p13be, p13ee, p13es, p13fi, p13lu, p13lv, p13mt, 
       cntry_de, eu6, eu9, eu10, eu12_1, eu12_2, eu_nms3, 
       eu15, eu_nms10, eu25, eu_ac2, eu_cc3, euroz13, 
       euronz13, eu_nms12, eu27, eu27b, eu_nms13, eu28, 
       euroz15, euronz15, euroz16, euronz16, euroz17, 
       eurnz17a, eurnz17b, euroz18, eurnz18a, eurnz18b, 
-      eurnz18c, euroz19, euronz19, p2, p3r, p4, p5, d71_1:qa4b_8, qa5b_1:qa5b_13, qa7:qb9_12
+      eurnz18c, euroz19, euronz19, p2, p3r, p4, p5, d71_1:qa4b_8, qa5b_1:qa5b_13,        qa7:qb9_12
     )
   )
 ```
@@ -112,7 +72,13 @@ The variables p2,p4,p3r,p4 and p5 where variable related to certain characterist
 
 The p13's variables where the language the interview was conducted with.
 
-The rest of the variables are related to the NATION GROUP, so we decided to take them out as we have other variables that seem to explain the same and be more relevant.
+The rest of the variables are related to the NATION GROUP, so we decided to take them out as we have other variables that seem to explain the same and be more relevant.///////
+
+I WOULD TAKE ALL OF THIS OUT
+
+**Cleaning specific variables to determine which are the more important once for our analysis.**
+
+**Id**
 
 ```{r}
 data_cleaning_2 <- data_cleaning_1 %>% 
@@ -124,7 +90,6 @@ data_cleaning_2 <- data_cleaning_1 %>%
 ```{r}
 # creating a variable for country name to be more organized
 data_cleaning_2$country_name <- NA
-
 data_cleaning_2$country_name[data_cleaning_2$q1_1 == 1] <- 'Bélgica'
 data_cleaning_2$country_name[data_cleaning_2$q1_2 == 1] <- 'Dinamarca'
 data_cleaning_2$country_name[data_cleaning_2$q1_3 == 1] <- 'Alemania'
@@ -156,33 +121,29 @@ data_cleaning_2$country_name[data_cleaning_2$q1_28 == 1] <- 'Croacia'
 data_cleaning_2$country_name[data_cleaning_2$q1_29 == 1] <- 'Otros países'
 data_cleaning_2$country_name[data_cleaning_2$q1_30 == 1] <- 'DK'  # no idea what this is
 
+# factor
+data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
 ```
 
 ```{r}
 data_cleaning_2 <- data_cleaning_2 %>% 
   select(serialid,country_name, everything())
 
-# factor
-data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
-```
-
-Removing q1_1 to q1_30
-
-```{r}
 data_cleaning_3 <- select(data_cleaning_2, -c(q1_1:q1_30))
-
 ```
 
 #### Age
 
+The different categories for age will be transformed as factor for better analysis. There are 3 variables that represent four, six and seven categories of age.
+
 ```{r}
 data_cleaning_3 <- data_cleaning_3 %>%
   mutate(
-    d11r1_recoded = factor(d11r1, 
+    Cat_age_four = factor(d11r1, 
                            labels = c("15 - 24", "25 - 39", "40 - 54", ">=55")),
-    d11r2_recoded = factor(d11r2, 
+    Cat_age_six = factor(d11r2, 
                            labels = c("15 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", ">=65")),
-    d11r3_recoded = factor(d11r3, 
+    Cat_age_seven = factor(d11r3, 
                            labels = c("15 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", "65 - 74", ">=75"))
   )
 
@@ -192,7 +153,7 @@ data_cleaning_3 <- data_cleaning_3 %>%
 data_cleaning_4 <- select(data_cleaning_3, -c(d11r1,d11r2,d11r3))
 ```
 
-Gender
+#### Gender
 
 ```{r}
 data_cleaning_4 <- data_cleaning_4 %>%
@@ -206,12 +167,23 @@ data_cleaning_4 <- data_cleaning_4 %>%
 
 ```
 
-#### Dependent Variable (qc19) - values are 1 for yes 2 for no and 3 for don t know (DK)
+#### Dependent Variable (qc19)
+
+The dependent variable takes the values
+
+-   1 for "Yes"
+
+-   2 for "No"
+
+-   3 for "Don't Know"
 
 ```{r}
 #making multinominal variable
 
 data_cleaning_4$qc19_multinominal <- factor(data_cleaning_4$qc19, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
+
+
+# if the variable is binary
 
 ```
 
@@ -220,118 +192,115 @@ data_cleaning_5 <- data_cleaning_4 %>%
   select(serialid,qc19_multinominal,country_name,gender,d11, everything())
 ```
 
-### Looking into the categorical variables.
+### Extra Country Level Variables
+
+We believe that the data was missing some variables related to the legality aspect in a country level so we found this data.
+
+Citation: Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", <https://doi.org/10.7910/DVN/FXXLTS,> Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
+
+" The Trans Rights Indicator Project (TRIP) provides insight into the legal situations transgender people faced in 173 countries from 2000 to 2021. The data set currently includes 14 indicators that capture the presence or absence of laws related to criminalization, legal gender recognition, and anti-discrimination protections "
 
 ```{r}
-categorical_vars <- names(data_cleaning_5)[sapply(data_cleaning_5, function(x) is.factor(x) | is.character(x))]
+library(haven)
+library(readr)
 
-print(categorical_vars)
+data_extra_by_Country <- read_delim("data_extra_by_Country.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+
+all_na_columns <- sapply(data_extra_by_Country, function(x) all(is.na(x)))
+
+# There are columns all NA due to filtering in stata done before.
+
+columns_to_remove <- names(data_extra_by_Country)[all_na_columns]
+
+# remove the columns
+Data_Extra_by_Country <- data_extra_by_Country[, !all_na_columns]
+Data_Extra_by_Country <- Data_Extra_by_Country[, !names(Data_Extra_by_Country) %in% "e_polity2"]
+
+# dataframe of all the variables for 2019 related to legal or political views of most of the countries in the world
+
+names(Data_Extra_by_Country)
+```
+
+```{r}
+country_name_mapping_reverse <- c(
+  'Belgium' = 'Bélgica',
+  'Denmark' = 'Dinamarca',
+  'Germany' = 'Alemania',
+  'Greece' = 'Grecia',
+  'Spain' = 'España',
+  'France' = 'Francia',
+  'Ireland' = 'Irlanda',
+  'Italy' = 'Italia',
+  'Luxembourg' = 'Luxemburgo',
+  'Netherlands' = 'Países Bajos',
+  'Portugal' = 'Portugal',
+  'United Kingdom' = 'Reino Unido',
+  'Austria' = 'Austria',
+  'Sweden' = 'Suecia',
+  'Finland' = 'Finlandia',
+  'Cyprus' = 'República de Chipre',
+  'Czech Republic' = 'República Checa',
+  'Estonia' = 'Estonia',
+  'Hungary' = 'Hungría',
+  'Latvia' = 'Letonia',
+  'Lithuania' = 'Lituania',
+  'Malta' = 'Malta',
+  'Poland' = 'Polonia',
+  'Slovakia' = 'Eslovaquia',
+  'Slovenia' = 'Eslovenia',
+  'Bulgaria' = 'Bulgaria',
+  'Romania' = 'Rumanía',
+  'Croatia' = 'Croacia'
+  # Note: 'Otros países' and 'DK' are specific to data_cleaning_2 and may not have direct mappings.
+)
+
 
 ```
 
 ```{r}
-categorical_vars <- c("country_name", "gender","isocntry","d11r1_recoded", "d11r2_recoded", "d11r3_recoded") # i took out the variable nuts becuase it was giving warning and its just a sigla.
-
-for(var in categorical_vars) {
-  cat("Chi-square test for:", var, "\n")
-  table <- table(data_cleaning_5[[var]], data_cleaning_5$qc19_multinominal)
-  test <- chisq.test(table)
-  print(test)
-}
-
+Data_Extra_by_Country$country_name <- country_name_mapping_reverse[Data_Extra_by_Country$country_name]
 ```
 
-All the variables tested show a statistically significant association with your dependent variable.
-
--   "country_name", "gender","isocntry","d11r1_recoded", "d11r2_recoded", "d11r3_recoded"
-
-### Looking into the continuous variables.
+Looking into the extra data set
 
 ```{r}
-# Getting all the numeric and integer variables in the dataset
-continuous_vars <- names(data_cleaning_5)[sapply(data_cleaning_5, function(x) is.numeric(x) | is.integer(x))]
+summary(Data_Extra_by_Country)
 ```
 
-As it was taking too much time, I found this why online to do it with cluster
+The variables chosen are the following:
 
 ```{r}
-library(parallel)
+Data_Extra_by_Country <- Data_Extra_by_Country %>% 
+  select(country_name,dir_crim,ind_crim,adp_general,trip_score,trip_percent)
 ```
 
 ```{r}
-# Define the function to perform the Kruskal-Wallis test
-performTest <- function(var) {
-  formula <- as.formula(paste(var, "~ qc19_multinominal"))
-  testResult <- kruskal.test(formula, data = data_cleaning_5)
-  return(list(variable = var, p.value = testResult$p.value))
-}
-
-# Detect the number of cores and set up a cluster
-no_cores <- detectCores() - 1
-cl <- makeCluster(no_cores)
-
-# Export the necessary variables and functions to the cluster
-clusterExport(cl, varlist = c("data_cleaning_5", "performTest"))
-
-# Perform the tests in parallel
-results <- parLapply(cl, continuous_vars, performTest)
-
-stopCluster(cl)
-```
-
-```{r}
-# Convert the list of results into a data frame
-results_df <- do.call(rbind, lapply(results, function(x) {
-  data.frame(Variable = x$variable, PValue = x$p.value, stringsAsFactors = FALSE)
-}))
-
-# Order the results by p-value
-results_df <- results_df[order(results_df$PValue), ]
-```
-
-#### Significant
-
-```{r}
-# Create a vector for significant variables (p-value <= 0.05)
-significant_vars <- results_df$Variable[results_df$PValue <= 0.05]
-
-# Create a vector for non-significant variables (p-value > 0.05)
-non_significant_vars <- results_df$Variable[results_df$PValue > 0.05]
-
-# Print or use the vectors as needed
-print("Significant variables:")
-print(significant_vars)
+merged_df <- merge(data_cleaning_5, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
 
 ```
 
-#### Not Significant
+## Descriptive Analysis
 
-```{r}
-print("Non-significant variables:")
-print(non_significant_vars)
-```
+### First look at association
 
-## First look at association
-
-- the descriptive analysis will oscillate between individual-level and country-level analysis
+-   the descriptive analysis will oscillate between individual-level and country-level analysis
 
 ### Question
 
-- what to do with refusal ? = NA
-- what to do with don't know? = NA
+-   what to do with refusal ? = NA
+-   what to do with don't know? = NA
 
 ### Gender
 
 Assumption from literature –\> men less supportive than women
 
 ```{r}
-
-df_descriptive <- data_cleaning_5
+df_descriptive <- merged_df
 
 qc19labels <- c("Yes", "No", "Don't know")
 names(qc19labels) <- c(1, 2, 3)
-
-
 
 df_descriptive |>
   mutate(d10 = as.factor(d10),
@@ -354,6 +323,8 @@ caption = "Source: Eurobarometer 91.4") +
   theme_minimal() +
   theme(legend.position = "bottom") +  # Adjust legend position
   guides(fill = guide_legend(title = NULL))  # Hide legend title
+
+
 ```
 
 ### Binary conception of gender
@@ -381,8 +352,6 @@ Since the p-value is much smaller than the conventional significance level of 0.
 Very high convergence of people against a third gender option and rejecting
 
 88.29% of those against a third gender option also negate the option for transgender persons to change their gender in civil documents.
-
-
 
 ```{r}
 plot_binary_1 <-
@@ -442,13 +411,14 @@ ggplot(aes(x = country_name, y = share_no)) +
 plot_binary_1
 plot_binary_2
 ```
-- visually this high convergence can also be seen on the country level
 
-- to verify this statistically, the Spearman rank test is used as the country-level proportions are not normally distributed
+-   visually this high convergence can also be seen on the country level
 
-- the statistical association between agreeing there should be a third gender option and supporting the ability for transgender people to change their civil document on the country level is estimated
+-   to verify this statistically, the Spearman rank test is used as the country-level proportions are not normally distributed
 
-- the Spearman rank test reports a very strong positive relationship between the two variables supporting the previous assertion that the acceptance of a third gender differentiates countries concerning their average approval of the civil document alteration for transgender people
+-   the statistical association between agreeing there should be a third gender option and supporting the ability for transgender people to change their civil document on the country level is estimated
+
+-   the Spearman rank test reports a very strong positive relationship between the two variables supporting the previous assertion that the acceptance of a third gender differentiates countries concerning their average approval of the civil document alteration for transgender people
 
 ```{r}
 
@@ -462,6 +432,7 @@ df_country_1 <-
 
 cor(df_country_1$prop_gndr_bin, df_country_1$prop_qc19_yes, method = "spearman")
 ```
+
 ### Political ideology
 
 ```{r}
@@ -620,15 +591,15 @@ CrossTable(df_descriptive$sd1_7_multinomial, df_descriptive$qc19_multinominal,
            format="SPSS")
 ```
 
-- association is statistically significant
+-   association is statistically significant
 
-- the majority of people did not have contact with a transgender person
+-   the majority of people did not have contact with a transgender person
 
-- there is a clear tendency on the individual level that among those that have not had contact with a transgender person the approval is relatively lower as for those who have had the margin is very clear (76% vs 18%)
+-   there is a clear tendency on the individual level that among those that have not had contact with a transgender person the approval is relatively lower as for those who have had the margin is very clear (76% vs 18%)
 
-- contact is associated rather with approval. Not having had contact not associated with being against, just lower approval
+-   contact is associated rather with approval. Not having had contact not associated with being against, just lower approval
 
-- this is visualised below
+-   this is visualised below
 
 ```{r}
 df_descriptive|> 
@@ -655,19 +626,20 @@ df_descriptive|>
 
 ### Age
 
-- using anova to seek out differences between those who responded 'yes', 'no', don't know' by age
+-   using anova to seek out differences between those who responded 'yes', 'no', don't know' by age
 
-- p-value let's us reject the null hypothesis. There is a statistically significant difference between at least two groups
+-   p-value let's us reject the null hypothesis. There is a statistically significant difference between at least two groups
 
 ```{r}
 anova <- aov(d11 ~ qc19_multinominal, data = df_descriptive)
 summary(anova)
 ```
-- visualizing group difference using boxplots
 
-- showing that the strongest difference is between those saying 'yes' and those stating 'don't know'
+-   visualizing group difference using boxplots
 
-- implies there is valuable information from particularly older people missing
+-   showing that the strongest difference is between those saying 'yes' and those stating 'don't know'
+
+-   implies there is valuable information from particularly older people missing
 
 ```{r}
 ggplot(df_descriptive, aes(x = qc19_multinominal, y = d11, fill = "red")) +
@@ -679,9 +651,10 @@ ggplot(df_descriptive, aes(x = qc19_multinominal, y = d11, fill = "red")) +
        caption = "Source: Eurobarometer 91.4") +
   theme(legend.position = "none")
 ```
-- regarding the difference between 'yes' and 'no' - those reporting the former are generally a bit younger
 
-- employ a correlation to look at strength and direction of the association while differentiating only between Yes and No
+-   regarding the difference between 'yes' and 'no' - those reporting the former are generally a bit younger
+
+-   employ a correlation to look at strength and direction of the association while differentiating only between Yes and No
 
 ```{r}
 df_cor_age <- 
@@ -692,13 +665,14 @@ df_cor_age <-
 
 cor(df_cor_age$d11, df_cor_age$qc19)
 ```
-- as already implied above only a slight relation ship
 
-- negative direction shows that a one year increase in age decreases approval
+-   as already implied above only a slight relation ship
+
+-   negative direction shows that a one year increase in age decreases approval
 
 ### Awareness
 
-- if type of discrimination is widespread in own country
+-   if type of discrimination is widespread in own country
 
 ```{r}
 df_descriptive$qc1_8_ordinal <- factor(df_descriptive$qc1_8, levels = c(1, 2, 3, 4 , 5, 6),labels = c("Very wide spread", "Fairly wide spread", "Fairly rare", "Very rare", "Nonexistent
@@ -712,11 +686,12 @@ CrossTable(df_descriptive$qc1_8_ordinal, df_descriptive$qc19_multinominal,
            prop.chisq=F, 
            format="SPSS")
 ```
-- p-value lets us very confidently state that there is a statistically significant relationship between the variables
 
-- among those reporting transgender people face very or fairly wide spread discrimination, the relative support for the possibility to change civil documents  is greater than for those stating it is fairly rare, while among those reporting it is very rare the share between supporters and opponents is balanced
+-   p-value lets us very confidently state that there is a statistically significant relationship between the variables
 
-- this clear association between more awareness and greater support is visible below
+-   among those reporting transgender people face very or fairly wide spread discrimination, the relative support for the possibility to change civil documents is greater than for those stating it is fairly rare, while among those reporting it is very rare the share between supporters and opponents is balanced
+
+-   this clear association between more awareness and greater support is visible below
 
 ```{r}
 df_descriptive|> 
@@ -741,9 +716,9 @@ df_descriptive|>
   scale_fill_brewer(palette = "Dark2")
 ```
 
-- between countries
+-   between countries
 
-- countries which have a higher share of approval are to be found rather towards the
+-   countries which have a higher share of approval are to be found rather towards the
 
 ```{r}
 df_descriptive |> 
@@ -770,9 +745,10 @@ ggplot(aes(x = country_name, y = share)) +
   geom_text((aes(label = sprintf("%.1f%%", share))),vjust = -0.5, size = 2)
 ```
 
-- to further investigate the country-level differences the association of the proportion of individuals aware of discrimination per country and the proportion of individuals in favor of the ability of transgender people to change their civil documents
+-   to further investigate the country-level differences the association of the proportion of individuals aware of discrimination per country and the proportion of individuals in favor of the ability of transgender people to change their civil documents
 
-- because the variables are non-normally distributed, we use the Spearman rank test
+-   because the variables are non-normally distributed, we use the Spearman rank test
+
 ```{r}
 df_country_2 <-
   df_descriptive |> 
@@ -789,7 +765,8 @@ df_country_2 <-
 
 cor(df_country_2$prop_dis_wide, df_country_2$prop_qc19_yes, method = "spearman")
 ```
-- the test shows a strong relationship between awareness of discrimination faced by transgender people on the country-level insuating that in countries with greater awareness there is greater support
+
+-   the test shows a strong relationship between awareness of discrimination faced by transgender people on the country-level insuating that in countries with greater awareness there is greater support
 
 ### Solidarity among minority groups
 
@@ -825,6 +802,7 @@ df_descriptive|>
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   scale_fill_brewer(palette = "Dark2")
 ```
+
 However, this support is much greater among people who themselves are a sexual minority. As such, people with similar experiences as transgender people are more likely to support transgender rights.
 
 ```{r}
@@ -955,7 +933,7 @@ df_descriptive|>
   scale_fill_brewer(palette = "Dark2")
 ```
 
-### Support for LGB rights
+### Support for LGBT rights
 
 ```{r}
 df_descriptive <- 
@@ -1002,10 +980,11 @@ cor(df_country_3$prop_lgb_yes, df_country_3$prop_qc19_yes, method = "spearman")
 
 -   very strong association on the country level indicating that most likely countries where there is greater support for the legal equality for LGB people also post higher support rates for the adoption of legislation allowing transgender people to change their gender in civic documents
 
--   this only captures the support direction. As outlined above, a similar strength may be expected for the revers association
+-   this only captures the support direction. As outlined above, a similar strength may be expected for the revers association.
 
+### Legal Criminalization of LGBTQ community by country level
 
-## Correlation between the significant numeric variables (this does not work)
+# Correlation between the significant numeric variables
 
 ```{r}
 corr_data <- data_cleaning_5 |> 
@@ -1170,71 +1149,4 @@ imputed_data <- mice(subset_data, method = "polyreg", m = num_imputations)
 
 # Get the completed datasets
 imputed_datasets <- complete(imputed_data)
-```
-
-### COUNTRY LEVEL VARIABLES (EXTRA)
-
-```{r}
-library(haven)
-data_extra_by_Country <- read_dta("Data/Extra Data.dta")
-all_na_columns <- sapply(data_extra_by_Country, function(x) all(is.na(x)))
-
-# There are columns all NA because I filtered in stata for the year and for each country certain variables that where interesting
-
-columns_to_remove <- names(data_extra_by_Country)[all_na_columns]
-
-# remove the columns
-data_extra_by_Country <- data_extra_by_Country[, !all_na_columns]
-
-# dataframe of all the variables for 2019 related to legal or political views of most of the countries in the world
-names(data_extra_by_Country)
-
-# Save the dataframe as a CSV file
-# write.csv(data_extra_by_Country, "data_extra_by_Country.csv", row.names = FALSE)
-```
-
-```{r}
-country_name_mapping_reverse <- c(
-  'Belgium' = 'Bélgica',
-  'Denmark' = 'Dinamarca',
-  'Germany' = 'Alemania',
-  'Greece' = 'Grecia',
-  'Spain' = 'España',
-  'France' = 'Francia',
-  'Ireland' = 'Irlanda',
-  'Italy' = 'Italia',
-  'Luxembourg' = 'Luxemburgo',
-  'Netherlands' = 'Países Bajos',
-  'Portugal' = 'Portugal',
-  'United Kingdom' = 'Reino Unido',
-  'Austria' = 'Austria',
-  'Sweden' = 'Suecia',
-  'Finland' = 'Finlandia',
-  'Cyprus' = 'República de Chipre',
-  'Czech Republic' = 'República Checa',
-  'Estonia' = 'Estonia',
-  'Hungary' = 'Hungría',
-  'Latvia' = 'Letonia',
-  'Lithuania' = 'Lituania',
-  'Malta' = 'Malta',
-  'Poland' = 'Polonia',
-  'Slovakia' = 'Eslovaquia',
-  'Slovenia' = 'Eslovenia',
-  'Bulgaria' = 'Bulgaria',
-  'Romania' = 'Rumanía',
-  'Croatia' = 'Croacia'
-  # Note: 'Otros países' and 'DK' are specific to data_cleaning_2 and may not have direct mappings.
-)
-
-
-```
-
-```{r}
-data_extra_by_Country$country_name <- country_name_mapping_reverse[data_extra_by_Country$country_name]
-
-```
-
-```{r}
-merged_df <- merge(data_cleaning_5, data_extra_by_Country, by = "country_name", all.x = TRUE)
-
 ```
