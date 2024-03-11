@@ -27,7 +27,6 @@ This narrative should articulate the reasoning behind strategic choices, describ
 
 ### LIBRARY
 
-
 ```{r}
 rm(list = ls())
 library(haven)
@@ -36,7 +35,8 @@ library(sjlabelled)
 library(tidyverse)
 library(corrplot)
 library(dplyr)
-
+library(gmodels)
+library(scales)
 ```
 
 ### Data
@@ -107,7 +107,6 @@ data_cleaning_1 <- data_cleaning_1 %>%
     )
   )
 ```
-
 
 The variables p2,p4,p3r,p4 and p5 where variable related to certain characteristics of the interview itself, we deemed them not relevant due to their context.
 
@@ -329,16 +328,26 @@ print(non_significant_vars)
 
 ## First look at association
 
+- the descriptive analysis will oscillate between individual-level and country-level analysis
+
+### Question
+
+- what to do with refusal ? = NA
+- what to do with don't know? = NA
+
 ### Gender
 
 Assumption from literature –\> men less supportive than women
 
 ```{r}
+
+df_descriptive <- data_cleaning_5
+
 qc19labels <- c("Yes", "No", "Don't know")
 names(qc19labels) <- c(1, 2, 3)
 
 
-data_cleaning_5 |>
+df_descriptive |>
   mutate(d10 = as.factor(d10),
          qc19_n = as.numeric(qc19),
          qc19 = as.factor(qc19)) |> 
@@ -351,13 +360,14 @@ data_cleaning_5 |>
   ggplot(aes(x = qc19_multinominal, y = gshare19, fill = d10))+
   geom_bar(stat = "identity", position = "dodge")+
   geom_text((aes(label = sprintf("%.1f%%", gshare19))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
-  theme(legend.position = "bottom") +
   labs(title = "Do you think that transgender persons should be able to change\ntheir civil documents to match their inner gender identity?",
 y = NULL,
 x = NULL,
 caption = "Source: Eurobarometer 91.4") +
-  scale_fill_manual(labels = c("Men", "Women"), values = c("blue", "red")) + 
-  guides(fill=guide_legend(title= ""))
+  scale_fill_manual(labels = c("Men", "Women"), values = c("blue", "red")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +  # Adjust legend position
+  guides(fill = guide_legend(title = NULL))  # Hide legend title
 ```
 
 ### Binary conception of gender
@@ -369,10 +379,9 @@ operationalization using question 20 on if there should be a third gender option
 Table
 
 ```{r}
-data_cleaning_5$qc20_multinominal <- factor(data_cleaning_4$qc20, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
+df_descriptive$qc20_multinominal <- factor(df_descriptive$qc20, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
 
-library(gmodels)
-CrossTable(data_cleaning_5$qc19_multinominal, data_cleaning_5$qc20_multinominal, 
+CrossTable(df_descriptive$qc19_multinominal, df_descriptive$qc20_multinominal, 
            digits=2, 
            expected=F, 
            asresid=T, 
@@ -387,18 +396,11 @@ Very high convergence of people against a third gender option and rejecting
 
 88.29% of those against a third gender option also negate the option for transgender persons to change their gender in civil documents.
 
-Differences in binary gender conception –\> country differences
 
-country average against
-
-##### Indicate that it's only the nos
 
 ```{r}
-library(patchwork)
-library(scales)
-
 plot_binary_1 <-
-  data_cleaning_5 |> 
+  df_descriptive |> 
   group_by(country_name) |> 
   summarise(share_no = mean(qc20 == 2, na.rm = TRUE)*100) |> 
   arrange(desc(share_no)) |> 
@@ -407,7 +409,8 @@ plot_binary_1 <-
 ggplot(aes(x = country_name, y = share_no)) +
   geom_col(fill = "red") +
   labs(x = "",
-       y = "") +
+       y = "",
+       caption = "Source: Eurobarometer 91.4") +
   theme_minimal() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
         plot.margin = margin(0, 0, 0, 0))  +
@@ -421,7 +424,7 @@ ggplot(aes(x = country_name, y = share_no)) +
                 fill = "transparent", color = "black", linewidth = 1)
 
 plot_binary_2 <- 
-  data_cleaning_5 |> 
+  df_descriptive |> 
   group_by(country_name) |> 
   summarise(share_no = mean(qc19 == 2, na.rm = TRUE)*100) |> 
   arrange(desc(share_no)) |> 
@@ -430,7 +433,8 @@ plot_binary_2 <-
 ggplot(aes(x = country_name, y = share_no)) +
   geom_col(fill = "red") +
   labs(x = "",
-       y = "") +
+       y = "",
+       caption = "Source: Eurobarometer 91.4") +
   theme_minimal()+ 
   theme(axis.text.x = element_text(angle = 90, hjust= 0),
         plot.margin = margin(-10, 0, 0, 0)) +
@@ -443,8 +447,6 @@ ggplot(aes(x = country_name, y = share_no)) +
   geom_rect(aes(xmin = 9.8, xmax = 24.6, 
                 ymin = 53, ymax = 76),
                 fill = "transparent", color = "black", linewidth = 1)
-
-plot_binary_2
 ```
 
 ```{r}
@@ -454,6 +456,421 @@ plot_binary_2
 plot_binary_1
 plot_binary_2
 ```
+- visually this high convergence can also be seen on the country level
+
+- to verify this statistically, the Spearman rank test is used as the country-level proportions are not normally distributed
+
+- the statistical association between agreeing there should be a third gender option and supporting the ability for transgender people to change their civil document on the country level is estimated
+
+- the Spearman rank test reports a very strong positive relationship between the two variables supporting the previous assertion that the acceptance of a third gender differentiates countries concerning their average approval of the civil document alteration for transgender people
+
+```{r}
+
+df_country_1 <- 
+  df_descriptive |>
+  group_by(country_name) |> 
+  summarize(
+    prop_gndr_bin = (sum(qc20_multinominal == "Yes") / n())*100, # Calculate proportion with high education
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
+
+
+cor(df_country_1$prop_gndr_bin, df_country_1$prop_qc19_yes, method = "spearman")
+```
+### Political ideology
+
+```{r}
+df_descriptive$d1_ordinal <- factor(df_descriptive$d1, levels = c(1, 2, 3, 4 , 5, 6, 7, 8, 9, 10, 97, 98),labels = c("Left", "2", "3", "4", "5", "6", "7", "8", "9", "Right", "Non-response", "Don't know"))
+
+CrossTable(df_descriptive$d1_ordinal, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+Note:
+
+-   25% of people chose 5, the exact middle ground
+
+Surprising results:
+
+-   The inherent idea is upheld that a greater share of more left-leaning people are in favor
+
+-   However, difference to very right-leaning people is not that great (60-30 left vs. 43-45 right)
+
+Problem:
+
+-   self-reporting self-right scale might not be so accurate
+
+-   a lot of information is hidden in the non-response and don't know groups of political ideology as they have greater don't know rates for qc19
+
+Take-away
+
+-   Still significant association (but maybe not as strong as suspected)
+
+```{r}
+
+df_descriptive |> 
+  mutate(d1_bin = case_when(
+    d1 < 4 ~ "Left",
+    d1 < 8 ~ "Middle",
+    d1 < 11 ~ "Right",
+    TRUE ~ "DK/Refusal"
+  )) |> 
+  mutate(d1_bin = fct_relevel(d1_bin, "DK/Refusal", after = Inf)) |> 
+  group_by(d1_bin, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  group_by(d1_bin) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = d1_bin, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by political ideology",
+       x = "Political Ideology",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+#### Add government ideology as better proxy
+
+### Religiosity
+
+```{r}
+df_descriptive <-
+  df_descriptive |> 
+  mutate(sd3_cat = case_when(sd3 == 1 ~ "Catholic",
+                             sd3 == 2 ~ "Orthodox Christian",
+                             sd3 == 3 ~ "Protestant",
+                             sd3 == 4 ~ "Other Christian",
+                             sd3 == 5 ~ "Jewish",
+                             sd3 < 9 ~ "Muslim", 
+                             sd3 < 12 ~ "Other",
+                             sd3 < 14 ~ "Atheist | Agnostic",
+                             sd3 == 14 ~ "Other",
+                             sd3 > 14 ~ "Don't know | Refusal")) 
+
+CrossTable(df_descriptive$sd3_cat, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+Problem:
+
+-   Very low counts for Jewish, Muslim, Other and Other Christian as can be seen in the plot below
+
+```{r}
+df_descriptive |> 
+  mutate(sd3_cat = fct_relevel(sd3_cat, "Don't know | Refusal", after = Inf)) |> 
+  ggplot(aes(x = sd3_cat)) +
+  geom_bar(fill = "black", color = "black", alpha = 0.5) +
+  labs(title = "Frequency by religious affiliation",
+       x = "",
+       y = "Absolutec count",
+       caption = "Source: Eurobarometer 91.4") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+Findings:
+
+-   on the individual level not believing in God more say yes as well as Protestant
+
+-   Catholics in favor but less strongly
+
+-   Orthodox Christian strong outlier with being against it
+
+Summary:
+
+-   roughly one may say that countries with a higher share of Orthodox Christians may be rather against it
+
+```{r}
+df_descriptive |> 
+  group_by(country_name) |> 
+  summarise(share = mean(sd3_cat == "Orthodox Christian", na.rm = TRUE)*100) |> 
+  arrange(desc(share)) |> 
+  mutate(country_name = factor(country_name, levels = country_name)) |>
+  filter(country_name != "Otros países") |> 
+ggplot(aes(x = country_name, y = share)) +
+  geom_col(fill = "red") +
+  labs(title = "Share of Orthodox Christians", 
+       x = "",
+       y = "",
+       caption = "Source: Eurobarometer 91.4") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.margin = margin(0, 0, 0, 0))  +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_text((aes(label = sprintf("%.1f%%", share))),vjust = -0.5, size = 2)
+```
+
+### Contact
+
+```{r}
+df_descriptive <-
+  df_descriptive |> 
+  mutate(
+    sd1_7 = car::recode(sd1_7, "1=1; 2=0; 3=NA; 4=2"),
+    sd1_7_multinomial = factor(sd1_7, levels = c(0, 1, 2), labels = c("No", "Yes", "Don't know"))
+  )
+
+CrossTable(df_descriptive$sd1_7_multinomial, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+- association is statistically significant
+
+- the majority of people did not have contact with a transgender person
+
+- there is a clear tendency on the individual level that among those that have not had contact with a transgender person the approval is relatively lower as for those who have had the margin is very clear (76% vs 18%)
+
+- contact is associated rather with approval. Not having had contact not associated with being against, just lower approval
+
+- this is visualised below
+
+```{r}
+df_descriptive|> 
+  drop_na(sd1_7_multinomial) |> 
+  group_by(sd1_7_multinomial, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(sd1_7_multinomial) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = sd1_7_multinomial, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by previous conatct with transgender person",
+       x = "Contact",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+### Age
+
+- using anova to seek out differences between those who responded 'yes', 'no', don't know' by age
+
+- p-value let's us reject the null hypothesis. There is a statistically significant difference between at least two groups
+
+```{r}
+anova <- aov(d11 ~ qc19_multinominal, data = df_descriptive)
+summary(anova)
+```
+- visualizing group difference using boxplots
+
+- showing that the strongest difference is between those saying 'yes' and those stating 'don't know'
+
+- implies there is valuable information from particularly older people missing
+
+```{r}
+ggplot(df_descriptive, aes(x = qc19_multinominal, y = d11, fill = "red")) +
+  geom_boxplot(color = "red") +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by age",
+       y = "Age",
+       x = "Support",
+       caption = "Source: Eurobarometer 91.4") +
+  theme(legend.position = "none")
+```
+- regarding the difference between 'yes' and 'no' - those reporting the former are generally a bit younger
+
+- employ a correlation to look at strength and direction of the association while differentiating only between Yes and No
+
+```{r}
+df_cor_age <- 
+  df_descriptive |> 
+  select(qc19, d11) |> 
+  filter(qc19 < 3) |> # filtering out everything besides 1 and 2
+  mutate(qc19 = ifelse(qc19 == 2, 0, qc19)) # Assigning 2 the number 0 for logical interpretation
+
+cor(df_cor_age$d11, df_cor_age$qc19)
+```
+- as already implied above only a slight relation ship
+
+- negative direction shows that a one year increase in age decreases approval
+
+### Awareness
+
+- if type of discrimination is widespread in own country
+
+```{r}
+df_descriptive$qc1_8_ordinal <- factor(df_descriptive$qc1_8, levels = c(1, 2, 3, 4 , 5, 6),labels = c("Very wide spread", "Fairly wide spread", "Fairly rare", "Very rare", "Nonexistent
+", "DK"))
+
+CrossTable(df_descriptive$qc1_8_ordinal, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+- p-value lets us very confidently state that there is a statistically significant relationship between the variables
+
+- among those reporting transgender people face very or fairly wide spread discrimination, the relative support for the possibility to change civil documents  is greater than for those stating it is fairly rare, while among those reporting it is very rare the share between supporters and opponents is balanced
+
+- this clear association between more awareness and greater support is visible below
+
+```{r}
+df_descriptive|> 
+  drop_na(qc1_8_ordinal) |> 
+  group_by(qc1_8_ordinal, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(qc1_8_ordinal) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = qc1_8_ordinal, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by perceived discrimination transgender people face",
+       x = "Contact",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+- between countries
+
+- countries which have a higher share of approval are to be found rather towards the
+
+```{r}
+df_descriptive |> 
+  mutate(qc1_8_ordinal = case_when(
+    qc1_8_ordinal == "Very wide spread" ~ "Very or fairly wide spread",
+    qc1_8_ordinal == "Fairly wide spread" ~ "Very or fairly wide spread",
+    TRUE ~ qc1_8_ordinal
+  )) |>
+  group_by(country_name) |> 
+  summarise(share = mean(qc1_8_ordinal == "Very or fairly wide spread", na.rm = TRUE)*100) |> 
+  arrange(desc(share)) |> 
+  mutate(country_name = factor(country_name, levels = country_name)) |>
+  filter(country_name != "Otros países") |> 
+ggplot(aes(x = country_name, y = share)) +
+  geom_col(fill = "red") +
+  labs(title = "Share of respondents perceiving discrimination against transgender people\nto be very of fairly wide spread", 
+       x = "",
+       y = "",
+       caption = "Source: Eurobarometer 91.4") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.margin = margin(0, 0, 0, 0))  +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_text((aes(label = sprintf("%.1f%%", share))),vjust = -0.5, size = 2)
+```
+
+- to further investigate the country-level differences the association of the proportion of individuals aware of discrimination per country and the proportion of individuals in favor of the ability of transgender people to change their civil documents
+
+- because the variables are non-normally distributed, we use the Spearman rank test
+```{r}
+df_country_2 <-
+  df_descriptive |> 
+  mutate(qc1_8_ordinal = case_when(
+    qc1_8_ordinal == "Very wide spread" ~ "Very or fairly wide spread",
+    qc1_8_ordinal == "Fairly wide spread" ~ "Very or fairly wide spread",
+    TRUE ~ qc1_8_ordinal
+  )) |> 
+  group_by(country_name) |> 
+  summarize(
+    prop_dis_wide = (sum(qc1_8_ordinal == "Very or fairly wide spread") / n())*100, # Calculate proportion with high education
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
+
+
+cor(df_country_2$prop_dis_wide, df_country_2$prop_qc19_yes, method = "spearman")
+```
+- the test shows a strong relationship between awareness of discrimination faced by transgender people on the country-level insuating that in countries with greater awareness there is greater support
+
+### Solidarity among minority groups
+
+```{r}
+df_descriptive <- 
+  df_descriptive |>  
+  mutate(
+    sd2t = factor(sd2t, levels = c(0, 1), labels = c("Not mentioned", "Yes"))
+  )
+```
+
+As the subsequent plot demonstrates, there is no general solidarity among minority group expressed by a greater support for transgender people than among individuals without any minority-background.
+
+```{r}
+df_descriptive|> 
+  drop_na(sd2t) |> 
+  group_by(sd2t, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(sd2t) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = sd2t, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by perceived discrimination transgender people face",
+       x = "Contact",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+However, this support is much greater among people who themselves are a sexual minority. As such, people with similar experiences as transgender people are more likely to support transgender rights.
+
+```{r}
+df_descriptive <- 
+  df_descriptive |>  
+  mutate(
+    sd2_5 = factor(sd2_5, levels = c(0, 1), labels = c("Not mentioned", "Yes"))
+  )
+
+
+df_descriptive|> 
+  drop_na(sd2_5) |> 
+  group_by(sd2_5, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(sd2_5) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = sd2_5, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by perceived discrimination transgender people face",
+       x = "Contact",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
 
 ## CORRELATION BETWEEN VARIABLES
 
