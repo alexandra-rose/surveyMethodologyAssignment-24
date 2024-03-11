@@ -187,11 +187,6 @@ data_cleaning_4$qc19_multinominal <- factor(data_cleaning_4$qc19, levels = c(1, 
 
 ```
 
-```{r}
-data_cleaning_5 <- data_cleaning_4 %>% 
-  select(serialid,qc19_multinominal,country_name,gender,d11, everything())
-```
-
 ### Extra Country Level Variables
 
 We believe that the data was missing some variables related to the legality aspect in a country level so we found this data.
@@ -277,7 +272,7 @@ Data_Extra_by_Country <- Data_Extra_by_Country %>%
 ```
 
 ```{r}
-merged_df <- merge(data_cleaning_5, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
+merged_df <- merge(data_cleaning_4, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
 
 ```
 
@@ -987,7 +982,7 @@ cor(df_country_3$prop_lgb_yes, df_country_3$prop_qc19_yes, method = "spearman")
 # Correlation between the significant numeric variables
 
 ```{r}
-corr_data <- data_cleaning_5 |> 
+corr_data <- data_cleaning_4 |> 
   select(-non_significant_vars) |> 
   select(-c(qa4t_1:qa6_8)) |> 
   mutate_if(is.character, as.numeric) # because the correlation matrix can only be calculated with numeric data, but this creates many NAs which need to be imputed
@@ -1050,7 +1045,7 @@ corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
 ```
 
 ```{r}
-complete_data <- data_cleaning_5 %>%
+complete_data <- data_cleaning_4 %>%
   select(all_of(significant_vars)) 
 
 # Recalculate num_cols because it's just an integer, not data
