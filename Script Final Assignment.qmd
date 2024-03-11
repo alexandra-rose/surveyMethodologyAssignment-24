@@ -857,6 +857,153 @@ df_descriptive|>
   scale_fill_brewer(palette = "Dark2")
 ```
 
+### Education
+
+-   age when leaving formal education
+
+-   expected that higher and lower ages are outliers
+
+-   one is able to gauge differences between the 'yes' and 'no' respondents with the former reporting a slightly higher age as their mode (highest frequency)
+
+```{r}
+df_descriptive <- 
+  df_descriptive |> 
+  mutate(d8 = case_when(d8 < 98 ~ d8,
+                        TRUE ~ NA)) # turning don't know and refusal into NA to keep continuous character of the variable - imputed later
+
+
+ggplot(df_descriptive, aes(x = qc19_multinominal, y = d8, fill = "red")) +
+  geom_boxplot(color = "red") +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by age",
+       y = "Age when leaving formal education",
+       x = "Support",
+       caption = "Source: Eurobarometer 91.4") +
+  theme(legend.position = "none")
+
+```
+
+The ANOVA analysis supports the claim, at least, that the groups are statistically significantly different from one another.
+
+```{r}
+anova <- aov(d8 ~ qc19_multinominal, data = df_descriptive)
+summary(anova)
+```
+
+```{r}
+df_cor_age <- 
+  df_descriptive |> 
+  select(qc19, d8) |> 
+  filter(qc19 < 3) |> # filtering out everything besides 1 and 2
+  mutate(qc19 = ifelse(qc19 == 2, 0, qc19)) # Assigning 2 the number 0 for logical interpretation
+
+cor(df_cor_age$d8, df_cor_age$qc19)
+```
+
+The correlation shows there is a very weak association in favor of the literature's case that being more educated is associated with an increased support of transgender rights.
+
+### The economic situation
+
+-   During the last twelve months, would you say you had difficulties to pay your bills at the end of the month…?
+
+```{r}
+
+df_descriptive <- 
+  df_descriptive |> 
+  mutate(
+    d60 = car::recode(d60, "4=NA"),
+    d60_ordinal = factor(d60, levels = c(1, 2, 3), labels = c("Most of the time", "From time to time", "Almost never/ never"))
+  )
+
+CrossTable(df_descriptive$d60_ordinal, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+-   following the literature, among those who never or almost never had difficulties to pay their bills at the end of the month, the support for the possibility of transgender people to alter their gender in their civic documents is markedly higher.
+
+-   the low p-value indicates that the association is statistically significant
+
+-   confers with literature
+
+-   this difference is visualized by the graph below
+
+```{r}
+df_descriptive|> 
+  drop_na(d60_ordinal) |> 
+  group_by(d60_ordinal, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(d60_ordinal) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = d60_ordinal, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by times having difficulties to pay the bills in last 12 months",
+       x = "Having difficulties to pay the bills in last 12 months",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+### Support for LGB rights
+
+```{r}
+df_descriptive <- 
+  df_descriptive |> 
+  mutate(
+    qc15_1_ordinal = factor(qc15_1, levels = c(1, 2, 3, 4, 5), labels = c("Totally agree", "Tend to agree", "Tend to disagree", "Totally disagree", "Don't know"))
+  )
+
+CrossTable(df_descriptive$qc15_1_ordinal, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+-   the p-value indicates statistical significance concerning the association between the two variables
+
+-   as may be expected, among those disagreeing that people part of the LGB community should have equal rights the support is very low and the rejection of the possibility
+
+-   rejection is almost as pronounced as the support regarding transgender people's ability to change their gender identification of those who totally agree people of the LGB community should have the same rights
+
+-   important: two way association
+
+-   on the country level
+
+```{r}
+df_country_3 <- 
+  df_descriptive |>
+  mutate(qc15_1_ordinal = case_when(
+    qc15_1_ordinal == "Totally agree" ~ "Totally or tend to agree",
+    qc15_1_ordinal == "Tend to agree" ~ "Totally or tend to agree",
+    TRUE ~ qc15_1_ordinal
+  )) |> 
+  group_by(country_name) |> 
+  summarize(
+    prop_lgb_yes = (sum(qc15_1_ordinal == "Totally or tend to agree") / n())*100, # Calculate proportion with high education
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
+
+
+cor(df_country_3$prop_lgb_yes, df_country_3$prop_qc19_yes, method = "spearman")
+```
+
+-   very strong association on the country level indicating that most likely countries where there is greater support for the legal equality for LGB people also post higher support rates for the adoption of legislation allowing transgender people to change their gender in civic documents
+
+-   this only captures the support direction. As outlined above, a similar strength may be expected for the revers association
+
 
 ## Correlation between the significant numeric variables (this does not work)
 
@@ -866,7 +1013,7 @@ corr_data <- data_cleaning_5 |>
   select(-c(qa4t_1:qa6_8)) |> 
   mutate_if(is.character, as.numeric) # because the correlation matrix can only be calculated with numeric data, but this creates many NAs which need to be imputed
 
-target_columns <- c("qc19", "qc20") # we pick 2 target variables because we are interested to see the correlation of th
+target_columns <- c("qc19") # we pick 2 target variables because we are interested to see the correlation of th
 
 # Check for NA values in the data
 na_summary <- colSums(is.na(corr_data))
