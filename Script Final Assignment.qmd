@@ -13,6 +13,9 @@ editor_options:
 
 ```{r}
 rm(list = ls())
+
+getwd()
+setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
 ```{r}
@@ -125,25 +128,6 @@ data_cleaning_4 <- data_cleaning_3 %>%
     ),
     gender = factor(gender, levels = c("male", "female"))
   )
-
-```
-
-#### Dependent Variable (qc19)
-
-The dependent variable takes the values
-
--   1 for "Yes"
-
--   2 for "No"
-
--   3 for "Don't Know"
-
-```{r}
-# Our dependent variable will be trated as binary
-data_cleaning_4$binary_qc19 <- ifelse(data_cleaning_4$qc19 == 1, 1, ifelse(data_cleaning_4$qc19 == 2, 2, NA))
-
-# binary_qc19 is our binary variable with 1 for Yes, 0 for No, and NA for Don't know
-summary(data_cleaning_4$binary_qc19)
 
 ```
 
@@ -950,6 +934,44 @@ chisq.test(table)
 ```
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
+
+## Modeling
+
+**Dependent Variable (qc19)**
+
+The dependent variable takes the values
+
+-   1 for "Yes"
+
+-   2 for "No"
+
+-   3 for "Don't Know"
+
+```{r}
+# Our dependent variable will be trated as binary
+df_descriptive$binary_qc19 <- ifelse(df_descriptive$qc19 == 1, 1, ifelse(df_descriptive$qc19 == 2, 0, NA))
+
+# binary_qc19 is our binary variable with 1 for Yes, 0 for No, and NA for Don't know
+summary(df_descriptive$binary_qc19)
+```
+
+```{r}
+df_descriptive <- left_join(df_descriptive, df_country_1 %>% select(country_name, prop_gndr_bin), by = "country_name")
+
+df_descriptive <- left_join(df_descriptive, df_country_3 %>% select(country_name, prop_lgb_yes), by = "country_name")
+
+
+df_descriptive <- left_join(df_descriptive, df_country_2 %>% select(country_name, prop_dis_wide), by = "country_name")
+#qc1
+```
+
+# FINAL DATA SET needs to be checked.
+
+```{r}
+data_final <- df_descriptive |> 
+  select(serialid,country_name,binary_qc19,qc19,Cat_age_four,Cat_age_six,Cat_age_seven,gender, qc20_multinominal,prop_gndr_bin,d1_ordinal, sd3_cat, sd1_7_multinomial,d10,d11, d8,d60_ordinal,sd2t,sd2_5, prop_dis_wide, qc15_1_ordinal, prop_lgb_yes,d25,adp_general)
+
+```
 
 # Correlation between the significant numeric variables
 
