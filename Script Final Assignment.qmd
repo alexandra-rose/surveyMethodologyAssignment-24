@@ -9,22 +9,6 @@ editor_options:
 
 # Final Assignment
 
-CHALLENGE
-
-The assignment has two primary objectives:
-
-1\. Explaining Cross-Country Differences in Support Levels: This aspect involves analyzing the data to understand why different countries exhibit varying levels of support for transgender individuals obtaining official documents (cq19 in the questionnare). Individual-level indicators need to be complemented with country-level factors such as cultural norms, legal systems, history, economic-related variables, and societal views on LGBTI rights.
-
-2.  Developing a Predictive Model for Other Countries This task involves building a model to predict support for transgender individuals changing civil documents to align with their gender identity. By using factors identified in the first part of the assignment, machine learning techniques will be applied to forecast support levels based on observed trends. To ensure the model’s accuracy and reliability, it must undergo thorough calibration and validation. Key steps in this process include selecting relevant features (variables), choosing an appropriate modeling method (such as regression analysis, decision trees, neural networks, etc.), training the model with survey data, and subsequently testing its predictions against known outcomes. A thorough understanding of the data, expertise in data analysis and statistical modeling, along with a deep awareness of the complexities surrounding LGBTI rights, are essential for successfully completing this assignment.
-
-Target variable: qc19 (support for changing gender on documents)
-
-ASSIGMENT SUBMISSION GUIDELINES Teams are responsible for assembling a comprehensive package for submission. This package must include:
-
-• Code: Complete and well-documented source code developed for the project. • Narrative Explanation: A detailed narrative of the work, not exceeding four pages (excluding references).
-
-This narrative should articulate the reasoning behind strategic choices, describe the challenges encountered and how they were overcome, and present/discuss the main results. The completed package must be uploaded to the designated task on Aula Global.
-
 ### Libraries
 
 ```{r}
@@ -32,7 +16,8 @@ rm(list = ls())
 ```
 
 ```{r}
-
+library(haven)
+library(readr)
 library(haven)
 library(writexl)
 library(sjlabelled)
@@ -41,46 +26,30 @@ library(corrplot)
 library(dplyr)
 library(gmodels)
 library(scales)
+library(rnaturalearth)
+library(sf)
+library(ggplot2)
+library(leaflet)
 ```
 
 ### Data
 
 ```{r}
-data <- read_dta("./Data/ZA7575.dta")
+data <- read_dta("Data/ZA7575.dta")
+
 ```
 
 ## Cleaning the data
 
-/////The first step is looking into the data set and removing variables that we found were not important for our analisis.
+Cleaning specific variables to determine which are the more important once for our analysis.
+
+**ID**
 
 ```{r}
 data_cleaning_1 <- data %>%
   select(
-         -c(studyno1, studyno2, doi, version, edition,survey,w1:w86,wex,
-      p13be, p13ee, p13es, p13fi, p13lu, p13lv, p13mt, 
-      cntry_de, eu6, eu9, eu10, eu12_1, eu12_2, eu_nms3, 
-      eu15, eu_nms10, eu25, eu_ac2, eu_cc3, euroz13, 
-      euronz13, eu_nms12, eu27, eu27b, eu_nms13, eu28, 
-      euroz15, euronz15, euroz16, euronz16, euroz17, 
-      eurnz17a, eurnz17b, euroz18, eurnz18a, eurnz18b, 
-      eurnz18c, euroz19, euronz19, p2, p3r, p4, p5, d71_1:qa4b_8, qa5b_1:qa5b_13,        qa7:qb9_12
-    )
-  )
-```
+         -c(studyno1, studyno2, doi, version, edition,survey,w1:w86,wex))
 
-The variables p2,p4,p3r,p4 and p5 where variable related to certain characteristics of the interview itself, we deemed them not relevant due to their context.
-
-The p13's variables where the language the interview was conducted with.
-
-The rest of the variables are related to the NATION GROUP, so we decided to take them out as we have other variables that seem to explain the same and be more relevant.///////
-
-I WOULD TAKE ALL OF THIS OUT
-
-**Cleaning specific variables to determine which are the more important once for our analysis.**
-
-**Id**
-
-```{r}
 data_cleaning_2 <- data_cleaning_1 %>% 
   select(serialid, everything())
 ```
@@ -90,46 +59,42 @@ data_cleaning_2 <- data_cleaning_1 %>%
 ```{r}
 # creating a variable for country name to be more organized
 data_cleaning_2$country_name <- NA
-data_cleaning_2$country_name[data_cleaning_2$q1_1 == 1] <- 'Bélgica'
-data_cleaning_2$country_name[data_cleaning_2$q1_2 == 1] <- 'Dinamarca'
-data_cleaning_2$country_name[data_cleaning_2$q1_3 == 1] <- 'Alemania'
-data_cleaning_2$country_name[data_cleaning_2$q1_4 == 1] <- 'Grecia'
-data_cleaning_2$country_name[data_cleaning_2$q1_5 == 1] <- 'España'
-data_cleaning_2$country_name[data_cleaning_2$q1_6 == 1] <- 'Francia'
-data_cleaning_2$country_name[data_cleaning_2$q1_7 == 1] <- 'Irlanda'
-data_cleaning_2$country_name[data_cleaning_2$q1_8 == 1] <- 'Italia'
-data_cleaning_2$country_name[data_cleaning_2$q1_9 == 1] <- 'Luxemburgo'
-data_cleaning_2$country_name[data_cleaning_2$q1_10 == 1] <- 'Países Bajos'
+data_cleaning_2$country_name[data_cleaning_2$q1_1 == 1] <- 'Belgium'
+data_cleaning_2$country_name[data_cleaning_2$q1_2 == 1] <- 'Denmark'
+data_cleaning_2$country_name[data_cleaning_2$q1_3 == 1] <- 'Germany'
+data_cleaning_2$country_name[data_cleaning_2$q1_4 == 1] <- 'Greece'
+data_cleaning_2$country_name[data_cleaning_2$q1_5 == 1] <- 'Spain'
+data_cleaning_2$country_name[data_cleaning_2$q1_6 == 1] <- 'France'
+data_cleaning_2$country_name[data_cleaning_2$q1_7 == 1] <- 'Ireland'
+data_cleaning_2$country_name[data_cleaning_2$q1_8 == 1] <- 'Italy'
+data_cleaning_2$country_name[data_cleaning_2$q1_9 == 1] <- 'Luxembourg'
+data_cleaning_2$country_name[data_cleaning_2$q1_10 == 1] <- 'Netherlands'
 data_cleaning_2$country_name[data_cleaning_2$q1_11 == 1] <- 'Portugal'
-data_cleaning_2$country_name[data_cleaning_2$q1_12 == 1] <- 'Reino Unido'
+data_cleaning_2$country_name[data_cleaning_2$q1_12 == 1] <- 'United Kingdom'
 data_cleaning_2$country_name[data_cleaning_2$q1_13 == 1] <- 'Austria'
-data_cleaning_2$country_name[data_cleaning_2$q1_14 == 1] <- 'Suecia'
-data_cleaning_2$country_name[data_cleaning_2$q1_15 == 1] <- 'Finlandia'
-data_cleaning_2$country_name[data_cleaning_2$q1_16 == 1] <- 'República de Chipre'
-data_cleaning_2$country_name[data_cleaning_2$q1_17 == 1] <- 'República Checa'
+data_cleaning_2$country_name[data_cleaning_2$q1_14 == 1] <- 'Sweden'
+data_cleaning_2$country_name[data_cleaning_2$q1_15 == 1] <- 'Finland'
+data_cleaning_2$country_name[data_cleaning_2$q1_16 == 1] <- 'Cyprus'
+data_cleaning_2$country_name[data_cleaning_2$q1_17 == 1] <- 'Czech Republic'
 data_cleaning_2$country_name[data_cleaning_2$q1_18 == 1] <- 'Estonia'
-data_cleaning_2$country_name[data_cleaning_2$q1_19 == 1] <- 'Hungría'
-data_cleaning_2$country_name[data_cleaning_2$q1_20 == 1] <- 'Letonia'
-data_cleaning_2$country_name[data_cleaning_2$q1_21 == 1] <- 'Lituania'
+data_cleaning_2$country_name[data_cleaning_2$q1_19 == 1] <- 'Hungary'
+data_cleaning_2$country_name[data_cleaning_2$q1_20 == 1] <- 'Latvia'
+data_cleaning_2$country_name[data_cleaning_2$q1_21 == 1] <- 'Lithuania'
 data_cleaning_2$country_name[data_cleaning_2$q1_22 == 1] <- 'Malta'
-data_cleaning_2$country_name[data_cleaning_2$q1_23 == 1] <- 'Polonia'
-data_cleaning_2$country_name[data_cleaning_2$q1_24 == 1] <- 'Eslovaquia'
-data_cleaning_2$country_name[data_cleaning_2$q1_25 == 1] <- 'Eslovenia'
+data_cleaning_2$country_name[data_cleaning_2$q1_23 == 1] <- 'Poland'
+data_cleaning_2$country_name[data_cleaning_2$q1_24 == 1] <- 'Slovakia'
+data_cleaning_2$country_name[data_cleaning_2$q1_25 == 1] <- 'Slovenia'
 data_cleaning_2$country_name[data_cleaning_2$q1_26 == 1] <- 'Bulgaria'
-data_cleaning_2$country_name[data_cleaning_2$q1_27 == 1] <- 'Rumanía'
-data_cleaning_2$country_name[data_cleaning_2$q1_28 == 1] <- 'Croacia'
-data_cleaning_2$country_name[data_cleaning_2$q1_29 == 1] <- 'Otros países'
-data_cleaning_2$country_name[data_cleaning_2$q1_30 == 1] <- 'DK'  # no idea what this is
-
-# factor
-data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
+data_cleaning_2$country_name[data_cleaning_2$q1_27 == 1] <- 'Romania'
+data_cleaning_2$country_name[data_cleaning_2$q1_28 == 1] <- 'Croatia'
+data_cleaning_2$country_name[data_cleaning_2$q1_29 == 1] <- 'Other countries'
+data_cleaning_2$country_name[data_cleaning_2$q1_30 == 1] <- 'DK'
 ```
 
 ```{r}
-data_cleaning_2 <- data_cleaning_2 %>% 
-  select(serialid,country_name, everything())
+# factor
+data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
 
-data_cleaning_3 <- select(data_cleaning_2, -c(q1_1:q1_30))
 ```
 
 #### Age
@@ -137,7 +102,7 @@ data_cleaning_3 <- select(data_cleaning_2, -c(q1_1:q1_30))
 The different categories for age will be transformed as factor for better analysis. There are 3 variables that represent four, six and seven categories of age.
 
 ```{r}
-data_cleaning_3 <- data_cleaning_3 %>%
+data_cleaning_3 <- data_cleaning_2 %>%
   mutate(
     Cat_age_four = factor(d11r1, 
                            labels = c("15 - 24", "25 - 39", "40 - 54", ">=55")),
@@ -149,14 +114,10 @@ data_cleaning_3 <- data_cleaning_3 %>%
 
 ```
 
-```{r}
-data_cleaning_4 <- select(data_cleaning_3, -c(d11r1,d11r2,d11r3))
-```
-
 #### Gender
 
 ```{r}
-data_cleaning_4 <- data_cleaning_4 %>%
+data_cleaning_4 <- data_cleaning_3 %>%
   mutate(
     gender = case_when(
       d10 == 1 ~ "male",
@@ -178,12 +139,11 @@ The dependent variable takes the values
 -   3 for "Don't Know"
 
 ```{r}
-#making multinominal variable
+# Our dependent variable will be trated as binary
+data_cleaning_4$binary_qc19 <- ifelse(data_cleaning_4$qc19 == 1, 1, ifelse(data_cleaning_4$qc19 == 2, 2, NA))
 
-data_cleaning_4$qc19_multinominal <- factor(data_cleaning_4$qc19, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
-
-
-# if the variable is binary
+# binary_qc19 is our binary variable with 1 for Yes, 0 for No, and NA for Don't know
+summary(data_cleaning_4$binary_qc19)
 
 ```
 
@@ -193,87 +153,39 @@ We believe that the data was missing some variables related to the legality aspe
 
 Citation: Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", <https://doi.org/10.7910/DVN/FXXLTS,> Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
 
-" The Trans Rights Indicator Project (TRIP) provides insight into the legal situations transgender people faced in 173 countries from 2000 to 2021. The data set currently includes 14 indicators that capture the presence or absence of laws related to criminalization, legal gender recognition, and anti-discrimination protections "
-
 ```{r}
-library(haven)
-library(readr)
-
-data_extra_by_Country <- read_delim("data_extra_by_Country.csv", 
+Data_Extra_by_Country <- read_delim("data_extra_by_Country.csv", 
     delim = ";", escape_double = FALSE, trim_ws = TRUE)
 
+all_na_columns <- sapply(Data_Extra_by_Country, function(x) all(is.na(x)))
 
-all_na_columns <- sapply(data_extra_by_Country, function(x) all(is.na(x)))
+# There are columns with all NA due to the filtering in stata done before for the year 2019.
 
-# There are columns all NA due to filtering in stata done before.
-
-columns_to_remove <- names(data_extra_by_Country)[all_na_columns]
+columns_to_remove <- names(Data_Extra_by_Country)[all_na_columns]
 
 # remove the columns
-Data_Extra_by_Country <- data_extra_by_Country[, !all_na_columns]
+Data_Extra_by_Country <- Data_Extra_by_Country[, !all_na_columns]
 Data_Extra_by_Country <- Data_Extra_by_Country[, !names(Data_Extra_by_Country) %in% "e_polity2"]
 
 # dataframe of all the variables for 2019 related to legal or political views of most of the countries in the world
-
-names(Data_Extra_by_Country)
-```
-
-```{r}
-country_name_mapping_reverse <- c(
-  'Belgium' = 'Bélgica',
-  'Denmark' = 'Dinamarca',
-  'Germany' = 'Alemania',
-  'Greece' = 'Grecia',
-  'Spain' = 'España',
-  'France' = 'Francia',
-  'Ireland' = 'Irlanda',
-  'Italy' = 'Italia',
-  'Luxembourg' = 'Luxemburgo',
-  'Netherlands' = 'Países Bajos',
-  'Portugal' = 'Portugal',
-  'United Kingdom' = 'Reino Unido',
-  'Austria' = 'Austria',
-  'Sweden' = 'Suecia',
-  'Finland' = 'Finlandia',
-  'Cyprus' = 'República de Chipre',
-  'Czech Republic' = 'República Checa',
-  'Estonia' = 'Estonia',
-  'Hungary' = 'Hungría',
-  'Latvia' = 'Letonia',
-  'Lithuania' = 'Lituania',
-  'Malta' = 'Malta',
-  'Poland' = 'Polonia',
-  'Slovakia' = 'Eslovaquia',
-  'Slovenia' = 'Eslovenia',
-  'Bulgaria' = 'Bulgaria',
-  'Romania' = 'Rumanía',
-  'Croatia' = 'Croacia'
-  # Note: 'Otros países' and 'DK' are specific to data_cleaning_2 and may not have direct mappings.
-)
-
-
-```
-
-```{r}
-Data_Extra_by_Country$country_name <- country_name_mapping_reverse[Data_Extra_by_Country$country_name]
 ```
 
 Looking into the extra data set
 
 ```{r}
+Data_Extra_by_Country$country_name <- factor(Data_Extra_by_Country$country_name)
 summary(Data_Extra_by_Country)
 ```
 
-The variables chosen are the following:
+The variable chosen is the the following:
 
 ```{r}
 Data_Extra_by_Country <- Data_Extra_by_Country %>% 
-  select(country_name,dir_crim,ind_crim,adp_general,trip_score,trip_percent)
+  select(country_name,adp_general)
 ```
 
 ```{r}
 merged_df <- merge(data_cleaning_4, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
-
 ```
 
 ## Descriptive Analysis
@@ -292,7 +204,10 @@ merged_df <- merge(data_cleaning_4, Data_Extra_by_Country, by = "country_name", 
 Assumption from literature –\> men less supportive than women
 
 ```{r}
+
 df_descriptive <- merged_df
+
+df_descriptive$qc19_multinominal <- factor(df_descriptive$qc19, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
 
 qc19labels <- c("Yes", "No", "Don't know")
 names(qc19labels) <- c(1, 2, 3)
@@ -416,7 +331,6 @@ plot_binary_2
 -   the Spearman rank test reports a very strong positive relationship between the two variables supporting the previous assertion that the acceptance of a third gender differentiates countries concerning their average approval of the civil document alteration for transgender people
 
 ```{r}
-
 df_country_1 <- 
   df_descriptive |>
   group_by(country_name) |> 
@@ -977,7 +891,65 @@ cor(df_country_3$prop_lgb_yes, df_country_3$prop_qc19_yes, method = "spearman")
 
 -   this only captures the support direction. As outlined above, a similar strength may be expected for the revers association.
 
-### Legal Criminalization of LGBTQ community by country level
+### Legal protections for the transgender community in 2019 by country level
+
+To observe if there is are general legal protections across various countries within our dataset, an interactive map was developed.
+
+```{r}
+df <- df_descriptive %>% 
+  select(country_name, adp_general)
+df$country_name <- as.character(df$country_name)
+
+df_unique <- df %>%
+  group_by(country_name) %>%
+  summarise(adp_general = max(adp_general)) %>%
+  ungroup()
+
+europe_map <- ne_countries(scale = "medium", continent = "europe", returnclass = "sf")
+
+df_joined <- left_join(europe_map, df_unique, by = c("sovereignt" = "country_name"))
+
+```
+
+```{r}
+df_joined$status <- case_when(
+  df_joined$adp_general == 1 ~ "General",
+  df_joined$adp_general == 0 ~ "None",
+  TRUE ~ "No Information"
+)
+
+df_plot <- df_joined %>% 
+  select(sovereignt, status)
+
+df_plot <- na.omit(df_plot)
+
+```
+
+```{r}
+pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
+
+leaflet(df_plot) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolygons(fillColor = ~pal(status),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 1,
+              popup = ~paste(sovereignt, status)) %>%
+  addLegend(pal = pal, values = ~status,
+            title = "Status",
+            position = "bottomright")
+
+```
+
+**Association**
+
+```{r}
+table <- table(df_descriptive$qc19_multinominal,df_descriptive$adp_general)
+chisq.test(table)
+
+```
+
+With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
 
 # Correlation between the significant numeric variables
 
