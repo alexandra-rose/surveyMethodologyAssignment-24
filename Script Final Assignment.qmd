@@ -1117,7 +1117,7 @@ impute using fixed effects, use a vector to include the factor country
 
 multilevel analysis on the countries, join with country level data
 
-So let's impute the missing data. Random Forest method of imputation should be the most accurate for imputing data with both continuous variables and categorical variables.
+IGNORE THIS ! imputation code
 
 ```{r}
 library(mice)
@@ -1145,3 +1145,86 @@ imputed_data <- mice(subset_data, method = "polyreg", m = num_imputations)
 # Get the completed datasets
 imputed_datasets <- complete(imputed_data)
 ```
+
+### COUNTRY LEVEL VARIABLES (EXTRA)
+
+```{r}
+library(haven)
+data_extra_by_Country <- read_dta("Data/Extra Data.dta")
+all_na_columns <- sapply(data_extra_by_Country, function(x) all(is.na(x)))
+
+# There are columns all NA because I filtered in stata for the year and for each country certain variables that where interesting
+
+columns_to_remove <- names(data_extra_by_Country)[all_na_columns]
+
+# remove the columns
+data_extra_by_Country <- data_extra_by_Country[, !all_na_columns]
+
+# dataframe of all the variables for 2019 related to legal or political views of most of the countries in the world
+names(data_extra_by_Country)
+
+# Save the dataframe as a CSV file
+# write.csv(data_extra_by_Country, "data_extra_by_Country.csv", row.names = FALSE)
+```
+
+```{r}
+country_name_mapping_reverse <- c(
+  'Belgium' = 'Bélgica',
+  'Denmark' = 'Dinamarca',
+  'Germany' = 'Alemania',
+  'Greece' = 'Grecia',
+  'Spain' = 'España',
+  'France' = 'Francia',
+  'Ireland' = 'Irlanda',
+  'Italy' = 'Italia',
+  'Luxembourg' = 'Luxemburgo',
+  'Netherlands' = 'Países Bajos',
+  'Portugal' = 'Portugal',
+  'United Kingdom' = 'Reino Unido',
+  'Austria' = 'Austria',
+  'Sweden' = 'Suecia',
+  'Finland' = 'Finlandia',
+  'Cyprus' = 'República de Chipre',
+  'Czech Republic' = 'República Checa',
+  'Estonia' = 'Estonia',
+  'Hungary' = 'Hungría',
+  'Latvia' = 'Letonia',
+  'Lithuania' = 'Lituania',
+  'Malta' = 'Malta',
+  'Poland' = 'Polonia',
+  'Slovakia' = 'Eslovaquia',
+  'Slovenia' = 'Eslovenia',
+  'Bulgaria' = 'Bulgaria',
+  'Romania' = 'Rumanía',
+  'Croatia' = 'Croacia'
+  # Note: 'Otros países' and 'DK' are specific to data_cleaning_2 and may not have direct mappings.
+)
+
+
+```
+
+```{r}
+data_extra_by_Country$country_name <- country_name_mapping_reverse[data_extra_by_Country$country_name]
+
+```
+
+```{r}
+merged_df <- merge(data_cleaning_5, data_extra_by_Country, by = "country_name", all.x = TRUE)
+
+```
+
+Alex part of the code
+
+impute something?
+
+```{r}
+
+```
+
+make the binary predictive model using the new merged and reduced dataset, try all the models to see which is best
+
+```{r}
+
+```
+
+figure out what to do with DK and refusal
