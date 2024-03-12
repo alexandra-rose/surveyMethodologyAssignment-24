@@ -575,7 +575,7 @@ impute using fixed effects, use a vector to include the factor country
 
 multilevel analysis on the countries, join with country level data
 
-So let's impute the missing data. Random Forest method of imputation should be the most accurate for imputing data with both continuous variables and categorical variables.
+IGNORE THIS ! imputation code
 
 ```{r}
 library(mice)
@@ -670,3 +670,19 @@ data_extra_by_Country$country_name <- country_name_mapping_reverse[data_extra_by
 merged_df <- merge(data_cleaning_5, data_extra_by_Country, by = "country_name", all.x = TRUE)
 
 ```
+
+Alex part of the code
+
+impute something?
+
+```{r}
+
+```
+
+make the binary predictive model using the new merged and reduced dataset, try all the models to see which is best
+
+```{r}
+
+```
+
+figure out what to do with DK and refusal
