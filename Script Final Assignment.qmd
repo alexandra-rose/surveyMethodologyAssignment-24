@@ -15,7 +15,7 @@ editor_options:
 rm(list = ls())
 
 getwd()
-setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
+#setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
 ```{r}
@@ -33,8 +33,12 @@ library(rnaturalearth)
 library(sf)
 library(ggplot2)
 library(leaflet)
-library(car)
+library(tidyverse)
+library(MASS)
 library(caret)
+library(plotly)
+library(car)
+
 
 ```
 
@@ -920,7 +924,6 @@ plot1
 ```{r}
 table <- table(df_descriptive$qc19_multinominal,df_descriptive$adp_general)
 chisq.test(table)
-
 ```
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
@@ -1179,6 +1182,96 @@ Data_final_Ind <- Individual_data |>
 
 ```
 
+```{r}
+# Check for NA values in the data
+na_summary <- colSums(is.na(complete_data))
+ 
+# Print columns with NA values
+cols_with_na_names <- names(na_summary[na_summary > 0])
+cols_with_na <- na_summary[na_summary > 0]
+print(cols_with_na)
+
+```
+
+impute using fixed effects, use a vector to include the factor country
+
+multilevel analysis on the countries, join with country level data
+
+IGNORE THIS ! imputation code
+
+```{r}
+
+
+# Define the number of imputations
+num_imputations <- 5  # Adjust as needed
+
+# Perform multiple imputation using polyreg method
+imputed_data <- mice(complete_data, method = "polyreg", m = num_imputations)
+
+# Get the completed datasets
+imputed_datasets <- complete(imputed_data)
+
+# Subset the dataset to include only the variables with warnings
+vars_with_warnings <- c("d40_d11", "p7ro", "p6ro", "d15b", "p7", "p7gr_r", "p7ie", "p7gr", "p7pl_r", "p7fi", "p6si", "p6fi", "p7lv", "p6hr", "p6lt", "p7cy", "p7hu_r", "p7pt", "p7sk", "d15b_r", "p6mt", "p7pl", "p7be_r", "p6lv", "p7ro_r", "p7ee", "p6hu", "p7lt", "p7it_r2", "p7it", "p13", "p6sk", "p6cy", "p6de", "p7de", "p7it_r1", "p7es", "p7hu", "p6fr", "p7be", "p7se_r")
+subset_data <- complete_data[vars_with_warnings]
+
+# Check the structure of the subsetted dataset
+str(subset_data)
+
+# Perform multiple imputation using polyreg method
+imputed_data <- mice(subset_data, method = "polyreg", m = num_imputations)
+
+# Get the completed datasets
+imputed_datasets <- complete(imputed_data)
+```
+
+Alex part of the code
+
+impute something? years of eductaion variable! age_stop_education
+
+```{r}
+library(mice)
+library(missForest)
+
+# Specify the variables for imputation
+impute_vars <- c("age_stopped_education", "d11", "political_ideology") # Add other variables as needed
+
+# Create a copy of the original dataset with only the specified variables
+impute_data <- Data_final_Ind[, impute_vars]
+
+# Perform multiple imputation using polyreg method
+num_imputations <- 5  # Adjust as needed
+imputed_data <- mice(impute_data, method = "pmm", m = num_imputations)
+```
+
+make the binary predictive model using the new merged and reduced dataset, try all the models to see which is best
+
+```{r}
+#We want to check if there are more Yes' or more Nos to see whicgh would be better to predict
+Data_final_Ind |> 
+  count(binary_qc19==1) 
+
+## Definition of yes
+Data_final_Ind$Yes = factor(Data_final_Ind$binary_qc19==1) # less than 5 over 20
+Data_final_Ind$binary_qc19 = NULL
+
+prop.table(table(Data_final_Ind$Yes))
+```
+
+Here we split the data into testing and training with a 75% split.
+
+```{r}
+set.seed(123)
+
+in_train <- createDataPartition(Data_final_Ind$Yes, p = 0.75, list = FALSE)  # 75% for training
+
+# Extracting the indices from the first column of in_train
+indices <- in_train[, 1]
+
+# Subsetting the data frame using the extracted indices
+training <- Data_final_Ind[indices, ]
+
+
 ### Regression Individual Level
 
 Imputation
@@ -1283,53 +1376,65 @@ cols_with_na_names <- names(na_summary[na_summary > 0])
 cols_with_na <- na_summary[na_summary > 0]
 print(cols_with_na)
 
+
+testing <- Data_final_Ind[-indices,]
+nrow(training)
+nrow(testing)
 ```
 
-impute using fixed effects, use a vector to include the factor country
+### Logistic regression
 
-multilevel analysis on the countries, join with country level data
-
-IGNORE THIS ! imputation code
+Remember predictions are posterior probabilities:
 
 ```{r}
-library(mice)
-library(missForest)
+logit.model = glm(Yes ~ . , data = training, family = binomial)
 
-# Define the number of imputations
-num_imputations <- 5  # Adjust as needed
+ctrl <- trainControl(method = "cv") # 10-fold cross-validation number = 10) 
+significant_vars <- c()
 
-# Perform multiple imputation using polyreg method
-imputed_data <- mice(complete_data, method = "polyreg", m = num_imputations)
+#remove rows with NAs
+training <- na.omit(training)
 
-# Get the completed datasets
-imputed_datasets <- complete(imputed_data)
+summary(logit.model)
 
-# Subset the dataset to include only the variables with warnings
-vars_with_warnings <- c("d40_d11", "p7ro", "p6ro", "d15b", "p7", "p7gr_r", "p7ie", "p7gr", "p7pl_r", "p7fi", "p6si", "p6fi", "p7lv", "p6hr", "p6lt", "p7cy", "p7hu_r", "p7pt", "p7sk", "d15b_r", "p6mt", "p7pl", "p7be_r", "p6lv", "p7ro_r", "p7ee", "p6hu", "p7lt", "p7it_r2", "p7it", "p13", "p6sk", "p6cy", "p6de", "p7de", "p7it_r1", "p7es", "p7hu", "p6fr", "p7be", "p7se_r")
-subset_data <- complete_data[vars_with_warnings]
+#use the testing data to predict the target variable
+probability <- predict(logit.model, newdata=testing, type='response')
+head(probability)
 
-# Check the structure of the subsetted dataset
-str(subset_data)
+prediction <- as.factor(ifelse(probability > 0.5, TRUE, FALSE))
+head(prediction)
 
-# Perform multiple imputation using polyreg method
-imputed_data <- mice(subset_data, method = "polyreg", m = num_imputations)
 
-# Get the completed datasets
-imputed_datasets <- complete(imputed_data)
 ```
 
-Alex part of the code
-
-impute something?
+LDA model
 
 ```{r}
+# Assume 'my_data' is your dataset with predictors and response variable
+# Create the LDA model
+lda_. model <- lda(Yes ~ ., data = training)
+
+# Summary of the LDA model
+summary(lda_model)
+
+# Make predictions using the LDA model
+lda_probability <- predict(lda_model, newdata = testing)$posterior
+
+# Convert the probabilities into a data frame
+lda_probability_df <- as.data.frame(lda_probability)
+
+# Display the head of the probabilities
+head(lda_probability_df)
 
 ```
 
-make the binary predictive model using the new merged and reduced dataset, try all the models to see which is best
+\
+
+Performance: confusion matrix
 
 ```{r}
-
+confusionMatrix(prediction, testing$Fail)$table
+confusionMatrix(prediction, testing$Fail)$overall[1:2]
 ```
 
-figure out what to do with DK and refusal
+Good behaviour in practice\
