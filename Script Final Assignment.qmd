@@ -1,6 +1,6 @@
 ---
 title: "Final Assignment"
-author: Sofia Villamil
+author: Alex Salo  Frederick Peña Sofia Villamil
 format: html
 editor: visual
 editor_options: 
@@ -37,6 +37,9 @@ library(tidyverse)
 library(MASS)
 library(caret)
 library(plotly)
+library(car)
+
+
 ```
 
 ### Data
@@ -106,6 +109,8 @@ data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
 
 ### Extra Country Level Variables
 
+**Legal variable**
+
 We believe that the data was missing some variables related to the legality aspect in a country level so we found this data.
 
 Citation: Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", <https://doi.org/10.7910/DVN/FXXLTS,> Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
@@ -141,7 +146,24 @@ Data_Extra_by_Country <- Data_Extra_by_Country %>%
 ```
 
 ```{r}
-merged_df <- merge(data_cleaning_2, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
+merged_df_1 <- merge(data_cleaning_2, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
+```
+
+**Economic Variables**
+
+The economic variables we choose were Unempoyment and GDP per capita.
+
+The data was attained from the World Bank.
+
+Citation: World Bank. (n.d.). DataBank: World Development Indicators \[Economy & Growth\]. Retrieved March 13, 2024, from <https://databank.worldbank.org/source/world-development-indicators>
+
+```{r}
+Eco_Extra_Data <- read_delim("Eco Extra Data.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE) 
+```
+
+```{r}
+merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRUE)
 ```
 
 ## Descriptive Analysis
@@ -443,8 +465,8 @@ ggplot(aes(x = country_name, y = share)) +
 df_descriptive <-
   df_descriptive |> 
   mutate(
-    sd1_7 = car::recode(sd1_7, "1=1; 2=0; 3=NA; 4=2"),
-    sd1_7_multinomial = factor(sd1_7, levels = c(0, 1, 2), labels = c("No", "Yes", "Don't know"))
+    sd1_7_NA = car::recode(sd1_7, "1=1; 2=0; 3=NA; 4=2"),
+    sd1_7_multinomial = factor(sd1_7_NA, levels = c(0, 1, 2), labels = c("No", "Yes", "Don't know"))
   )
 
 CrossTable(df_descriptive$sd1_7_multinomial, df_descriptive$qc19_multinominal,
@@ -884,7 +906,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-plot <- leaflet(df_plot) %>%
+plot1 <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -894,7 +916,7 @@ plot <- leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-plot
+plot1
 ```
 
 **Association**
@@ -905,6 +927,10 @@ chisq.test(table)
 ```
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
+
+Descriptive analysis for GDP
+
+Descriptive analysis for Unemployment
 
 ## Modeling
 
@@ -920,28 +946,19 @@ It takes the values:
 
 -   2 for "No"
 
-3 for "Don't Know"
-
-Binary in an individual level
+We will take the variable as Binary in the individual level
 
 ```{r}
-# Our dependent variable will be trated as binary
 df_descriptive <- df_descriptive %>%
   mutate(binary_qc19 = ifelse(qc19 == 1, 1, 
                               ifelse(qc19 == 2, 0, NA)))
 # there are 3280 NA's
 
 Individual_data <- df_descriptive %>%
-  select(serialid,country_name,isocntry, binary_qc19)
+  select(serialid,country_name, binary_qc19)
 ```
 
-Binary in a country level.
-
-```{r}
-#frederick i believe created already a variable for prop yes, ask
-```
-
-INDIVIDUAL LEVEL(not yet ready)
+INDIVIDUAL LEVEL
 
 **Gender**
 
@@ -983,11 +1000,14 @@ In political matters people talk of "the left" and "the right". How would you pl
 
 ```{r}
 
-df_descriptive <- df_descriptive %>% 
-  #filter(!d1 %in% c(97, 98)) %>%
-  rename(political_ideology = d1) 
+df_descriptive$d1_ordinal <- relevel(df_descriptive$d1_ordinal, ref = "Left") 
+df_descriptive$d1_ordinal[df_descriptive$d1_ordinal %in% c("Non-response", "Don't know", 98)] <- NA
 
-#removes observations with 'Non-response' and 'Don't know'
+df_descriptive$d1_ordinal <- factor(df_descriptive$d1_ordinal)
+
+df_descriptive <- df_descriptive %>% 
+  rename(political_ideology = d1_ordinal) 
+
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, political_ideology), by = "serialid")
 
 ```
@@ -997,29 +1017,20 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 Religion - Do you consider yourself to be…?
 
 ```{r}
+
 df_descriptive <- df_descriptive %>%
   mutate(Religion_cat = case_when(
-    sd3 == 1 ~ "Catholic",
-    sd3 == 2 ~ "Orthodox Christian",
-    sd3 == 3 ~ "Protestant",
-    sd3 == 4 ~ "Other Christian",
-    sd3 == 5 ~ "Jewish",
-    sd3 == 6 ~ "Muslim - Shia",
-    sd3 == 7 ~ "Muslim - Sunni",
-    sd3 == 8 ~ "Other Muslim",
-    sd3 == 9 ~ "Sikh",
-    sd3 == 10 ~ "Buddhist",
-    sd3 == 11 ~ "Hindu",
-    sd3 == 12 ~ "Atheist",
-    sd3 == 13 ~ "Non believer or agnostic",
-    sd3 == 14 ~ "Other",
-    sd3 == 15 ~ "Refusal (SPONTANEOUS)",
-    sd3 == 16 ~ "DK",
-    TRUE ~ NA_character_ # This will assign NA to any code that doesn't match
-  )) 
-#%>%
-  # Removing rows with NA in sd3_cat if desired
-  #filter(!is.na(sd3_cat))
+    sd3_cat == "Catholic" ~ "Catholic",
+    sd3_cat == "Orthodox Christian" ~ "Orthodox Christian",
+    sd3_cat == "Protestant" ~ "Protestant",
+    sd3_cat == "Other Christian" ~ "Other Christian",
+    sd3_cat == "Jewish" ~ "Jewish",
+    sd3_cat == "Muslim" ~ "Muslim", 
+    sd3_cat == "Other" ~ "Other Religion",
+    sd3_cat == "Atheist | Agnostic" ~ "Atheist | Agnostic",
+    sd3_cat == "Other" ~ "Other Belief",
+    TRUE ~ "Other"
+  ))
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, Religion_cat), by = "serialid")
 
@@ -1030,21 +1041,13 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 Do you have friends or acquaintances who are transgender?
 
 ```{r}
-#already recoded contact part
 
-data <- data %>%
+df_descriptive <- df_descriptive %>%
   mutate(sd1_7_factor = factor(sd1_7, 
               levels = c(1, 2, 3, 4),
               labels = c("Yes", "No", "Refusal (SPONTANEOUS)", "Don't know")))
 
-#df_descriptive <- df_descriptive %>%
-  #mutate(sd1_7_binary = case_when(
-    #sd1_7 == 1 ~ 1,    # Yes
-    #sd1_7 == 2 ~ 0,    # No
-    #TRUE ~ NA_real_  ))   # Refusal and Don't know are treated as missing
-
-
-Individual_data <- left_join(Individual_data, data %>% select(serialid, sd1_7_factor), by = "serialid")
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, sd1_7_factor), by = "serialid")
 ```
 
 **d8**
@@ -1061,6 +1064,7 @@ df_descriptive <- df_descriptive %>%
     d8 == 01 ~ NA_real_,  # No Education can be treated as missing or given a special code
     TRUE ~ as.numeric(d8) # Convert all other responses to numeric
   ))
+
 
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, age_stopped_education), by = "serialid")
@@ -1099,11 +1103,17 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```
 
-**qc15**
+**qc15_1_ordinal**
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc15_1_ordinal), by = "serialid")
 
+```
+
+**qc1_8_ordinal**
+
+```{r}
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc1_8_ordinal), by = "serialid")
 ```
 
 COUNTRY LEVEL
@@ -1119,7 +1129,7 @@ Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes),
                         full_join, by = "country_name")
 
 
-Country_level <- left_join(Country_level, df_country_1 %>% select(country_name, prop_qc19_yes),  by = "country_name")
+Country_level <- left_join(Country_level, binary_qc19_data %>% select(country_name, count_yes,count_no),  by = "country_name")
 
 ```
 
@@ -1138,30 +1148,38 @@ Country_level <- left_join(Country_level, df_descriptive %>%
 
 To control for country effects or to specifically examine how outcomes vary by country we will include the variable created earlier, "country_name".
 
-IDEA
-
-Unemployment by country, got the excel just in case
-
-GDP by country
+Unemployment, total (% of total labor force)
 
 ```{r}
-#faltannn
-#qc1,sd2t, qc20_multinomial
+Country_level <- left_join(Country_level, df_descriptive %>% 
+  select(country_name, Unemployment = `Unemployment. total (% of total labor force) (modeled ILO estimate)`) %>% 
+  distinct(), by = "country_name")
+
+```
+
+GDP per capita (current US\$)
+
+```{r}
+Country_level <- left_join(Country_level, df_descriptive %>% 
+  select(country_name, Gdp_per_capita = `GDP per capita (current US$)`) %>% 
+  distinct(), by = "country_name")
+
 ```
 
 DATA FINAL COUNTRY
 
 ```{r}
 Data_final_Cntry <- Country_level |>
-   select(country_name, prop_qc19_yes , prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection)
+   select(prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection, Gdp_per_capita, Unemployment)
 ```
 
 DATA FINAL INDIVIDUAL
 
 ```{r}
+
 Data_final_Ind <- Individual_data |> 
-  select(serialid,country_name,isocntry,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
-          
+  select(serialid,country_name,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
+
 ```
 
 ```{r}
@@ -1252,6 +1270,112 @@ indices <- in_train[, 1]
 
 # Subsetting the data frame using the extracted indices
 training <- Data_final_Ind[indices, ]
+
+
+### Regression Individual Level
+
+Imputation
+
+Regression
+
+```{r}
+data_reg_ind <- Data_final_Ind |> 
+  select(binary_qc19,male, d11 ,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
+
+
+data_reg_ind = data_reg_ind %>%
+  filter(!is.na(binary_qc19))
+```
+
+```{r}
+
+logit_model <- glm(binary_qc19 ~ ., family=binomial(link='logit'), data= data_reg_ind)
+
+summary(logit_model)
+```
+
+There are several variables that are not significant. We also tried the regression with the categories of variables for age that we had and they were also not significant. We will now proceed to reduce the variables used.
+
+```{r}
+logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+                    family = binomial(link = "logit"), data = data_reg_ind)
+
+summary(logit_model2)
+
+
+```
+
+We are going to transform the age variable to include a quadratic term as we suspect the relationship between age and the dependent variable is not linear.
+
+```{r}
+logit_model3 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+                    family = binomial(link = "logit"), data = data_reg_ind)
+
+summary(logit_model3)
+```
+
+**Interpretation**
+
+```{r}
+exp(coef(logit_model3))
+```
+
+**Male:** The odds of supporting Transgender individuals of being able to change their civil document to match their inner gender are about 25.4% lower for males compared to females, since the odds ratio is 0.74.
+
+**d11:** For each one-year increase in age, the odds of the being supportive of Transgender individuals changing their civil document increase by about 1.9%.
+
+**political_ideology:** Identifying with the political ideology "Right" decreases the odds of the supporting the change in civil documents by transgender individuals to match their inner gender identity by about 22.8%, compared to the baseline category of political ideology.
+
+**Religion_cat:** Identifying as having Catholics faith have a decrease in the odds of about 21.2%, while identifying as having Jewish faith have an odds increase of about 2.3%, in comparison to the baseline category religion.
+
+**sd1_7_factor:** Responding "No" to having friends or acquaintances who are transgender decreases the odds of the supporting Transgender individuals in being able to change their civil documents by about 45.5%, in comparison to the baseline category.
+
+**d60_ordinal:** Responding that during the last twelve month you had difficulties from time to time in paying your bills, slightly increases the odds of being in favor of letting transgender individuals to change their civil document by about 7.5%, while "Almost never/never" increases the odds by about 26.3%.
+
+**qc15_1_ordinal:** Tending to agree that Gay, lesbian and bisexual people should have the same rights as heterosexual people, decreases the odds by about 61.5%, while "Totally disagree" decreases the odds by about 92.9%.
+
+### Regression for Individual and Country Level Analysis.
+
+## Prediction by Individual Level
+
+We want to create a model that is able to predict the support for transgender individuals changing civil documents.
+
+### Definition of support
+
+```{r}
+prop_table_yes_no <- prop.table(table(factor(data_reg_ind$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))))
+
+prop_table_yes_no
+```
+
+We need to find the factors that are causing this 60% of support for our dependent variable..
+
+### Data splitting
+
+```{r}
+
+set.seed(123)
+
+in_train <- createDataPartition(y = data_reg_ind$binary_qc19, p = 0.8, list = FALSE)
+
+in_train <- in_train[, 1]
+
+training <- data_reg_ind[in_train, ]
+testing <- data_reg_ind[-in_train, ]
+```
+
+//////////////////////////
+
+```{r}
+ 
+# Check for NA values in the data
+na_summary <- colSums(is.na(complete_data))
+ 
+# Print columns with NA values
+cols_with_na_names <- names(na_summary[na_summary > 0])
+cols_with_na <- na_summary[na_summary > 0]
+print(cols_with_na)
+
 
 testing <- Data_final_Ind[-indices,]
 nrow(training)
