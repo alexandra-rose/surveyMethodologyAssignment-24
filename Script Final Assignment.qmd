@@ -1,6 +1,6 @@
 ---
 title: "Final Assignment"
-author: Sofia Villamil
+author: Alex Salo  Frederick Peña Sofia Villamil
 format: html
 editor: visual
 editor_options: 
@@ -103,6 +103,8 @@ data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
 
 ### Extra Country Level Variables
 
+**Legal variable**
+
 We believe that the data was missing some variables related to the legality aspect in a country level so we found this data.
 
 Citation: Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", <https://doi.org/10.7910/DVN/FXXLTS,> Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
@@ -138,7 +140,24 @@ Data_Extra_by_Country <- Data_Extra_by_Country %>%
 ```
 
 ```{r}
-merged_df <- merge(data_cleaning_2, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
+merged_df_1 <- merge(data_cleaning_2, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
+```
+
+**Economic Variables**
+
+The economic variables we choose were Unempoyment and GDP per capita.
+
+The data was attained from the World Bank.
+
+Citation: World Bank. (n.d.). DataBank: World Development Indicators \[Economy & Growth\]. Retrieved March 13, 2024, from <https://databank.worldbank.org/source/world-development-indicators>
+
+```{r}
+Eco_Extra_Data <- read_delim("Eco Extra Data.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE) 
+```
+
+```{r}
+merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRUE)
 ```
 
 ## Descriptive Analysis
@@ -881,7 +900,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-plot1 <- leaflet(df_plot) %>%
+plot <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -891,7 +910,7 @@ plot1 <- leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-plot1
+plot
 ```
 
 **Association**
@@ -933,13 +952,14 @@ Individual_data <- df_descriptive %>%
 Binary in a country level.
 
 ```{r}
-
+# Calculate the counts of "Yes" and "No" responses for each country
 binary_qc19_data <- df_descriptive %>%
   group_by(country_name) %>%
   summarise(
-    prop_qc19_yes = mean(binary_qc19, na.rm = TRUE) * 100 
+    count_yes = sum(binary_qc19 == 1, na.rm = TRUE),  # Count of "Yes" responses
+    count_no = sum(binary_qc19 == 0, na.rm = TRUE)   # Count of "No" responses
   ) %>%
-  ungroup() 
+  ungroup()
 
 ```
 
@@ -1111,7 +1131,7 @@ Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes),
                         full_join, by = "country_name")
 
 
-Country_level <- left_join(Country_level, binary_qc19_data %>% select(country_name, prop_qc19_yes),  by = "country_name")
+Country_level <- left_join(Country_level, binary_qc19_data %>% select(country_name, count_yes,count_no),  by = "country_name")
 
 ```
 
@@ -1130,28 +1150,45 @@ Country_level <- left_join(Country_level, df_descriptive %>%
 
 To control for country effects or to specifically examine how outcomes vary by country we will include the variable created earlier, "country_name".
 
-IDEA
+Unemployment, total (% of total labor force)
 
-Unemployment by country, got the excel just in case
+```{r}
+Country_level <- left_join(Country_level, df_descriptive %>% 
+  select(country_name, Unemployment = `Unemployment. total (% of total labor force) (modeled ILO estimate)`) %>% 
+  distinct(), by = "country_name")
 
-GDP by country, got the excel just in case
+```
+
+GDP per capita (current US\$)
+
+```{r}
+Country_level <- left_join(Country_level, df_descriptive %>% 
+  select(country_name, Gdp_per_capita = `GDP per capita (current US$)`) %>% 
+  distinct(), by = "country_name")
+
+```
 
 DATA FINAL COUNTRY
 
 ```{r}
 Data_final_Cntry <- Country_level |>
-   select(country_name, prop_qc19_yes , prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection)
+   select(count_yes,count_no , prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection, Gdp_per_capita, Unemployment)
 ```
 
 DATA FINAL INDIVIDUAL
 
 ```{r}
+
 Data_final_Ind <- Individual_data |> 
   select(serialid,country_name,isocntry,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
-          
+
 ```
 
-Regression Individual Level
+### Regression Individual Level
+
+Imputation
+
+Regression
 
 ```{r}
 data_reg_ind <- Data_final_Ind |> 
@@ -1175,9 +1212,9 @@ There are several variables that are not significant. We also tried the regressi
 logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
-summary(logit_model2)
+  reg <- summary(logit_model2)
 
-
+print(reg)
 ```
 
 We are going to transform the age variable to include a quadratic term as we suspect the relationship between age and the dependent variable is not linear.
@@ -1187,8 +1224,21 @@ logit_model2 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology + 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
 summary(logit_model2)
+```
+
+### Regression Country Level
+
+Due to our dependent variable now being a proportion we will use another type of regression model that accommodates for this.
+
+```{r}
+glm_model <- glm(cbind(count_yes, count_no) ~ ., 
+                 family = binomial(link = "logit"), data = Data_final_Cntry)
+
+summary(glm_model)
 
 ```
+
+Regression for Individual and Country Level Analysis.
 
 //////////////////////////
 
