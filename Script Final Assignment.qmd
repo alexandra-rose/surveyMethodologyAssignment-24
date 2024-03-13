@@ -15,7 +15,7 @@ editor_options:
 rm(list = ls())
 
 getwd()
-setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
+#setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
 ```{r}
@@ -33,6 +33,10 @@ library(rnaturalearth)
 library(sf)
 library(ggplot2)
 library(leaflet)
+library(tidyverse)
+library(MASS)
+library(caret)
+library(plotly)
 ```
 
 ### Data
@@ -898,7 +902,6 @@ plot
 ```{r}
 table <- table(df_descriptive$qc19_multinominal,df_descriptive$adp_general)
 chisq.test(table)
-
 ```
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
@@ -1161,129 +1164,6 @@ Data_final_Ind <- Individual_data |>
           
 ```
 
-# Correlation between the significant numeric variables
-
-```{r}
-corr_data <- data_cleaning_2 |> 
-  select(-non_significant_vars) |> 
-  select(-c(qa4t_1:qa6_8)) |> 
-  mutate_if(is.character, as.numeric) # because the correlation matrix can only be calculated with numeric data, but this creates many NAs which need to be imputed
-
-target_columns <- c("qc19") # we pick 2 target variables because we are interested to see the correlation of th
-
-# Check for NA values in the data
-na_summary <- colSums(is.na(corr_data))
-
-# Print columns with NA values
-cols_with_na <- names(na_summary[na_summary > 0])
-print(cols_with_na)
-
-# Convert target_columns to numeric
-corr_data[target_columns] <- lapply(corr_data[target_columns], as.numeric)
-
-# Filter out rows with missing values in target columns
-corr_data <- corr_data[complete.cases(corr_data[target_columns]), ]
-
-#defining columns that will work for the correlation matrix
-numeric_cols <- corr_data[corr_data]
-
-# Determine the number of columns in complete_data
-num_cols <- ncol(corr_data)
-
-# Calculate the number of columns in each subset (assuming you want approximately equal splits)
-subset_size <- ceiling(num_cols / 6)
-
-# Split complete_data into three subsets
-subset_1 <- numeric_cols[, 1:subset_size]
-subset_2 <- numeric_cols[, (subset_size + 1):(2 * subset_size)]
-subset_3 <- numeric_cols[, (2 * subset_size + 1):(3 * subset_size)]
-subset_4 <- numeric_cols[, (3 * subset_size + 1):(4 * subset_size)]
-subset_5 <- numeric_cols[, (4 * subset_size + 1):(5 * subset_size)]
-subset_6 <- numeric_cols[, (5 * subset_size + 1):num_cols]
-
-#1
-cor_matrix1 <- cor(corr_data[target_columns], subset_1, use = "pairwise.complete.obs")
-corr1 <- corrplot(cor_matrix1, method = "circle", tl.col = "black", tl.srt = 45)
-
-#2
-cor_matrix2 <- cor(complete_data[target_columns], subset_2, use = "pairwise.complete.obs")
-corr2 <- corrplot(cor_matrix2, method = "circle", tl.col = "black", tl.srt = 45)
-
-#3
-cor_matrix3 <- cor(complete_data[target_columns], subset_3, use = "pairwise.complete.obs")
-corr3 <- corrplot(cor_matrix3, method = "circle", tl.col = "black", tl.srt = 45)
-
-#4
-cor_matrix4 <- cor(complete_data[target_columns], subset_4, use = "pairwise.complete.obs")
-corr4 <- corrplot(cor_matrix4, method = "circle", tl.col = "black", tl.srt = 45)
-
-#5
-cor_matrix5 <- cor(complete_data[target_columns], subset_5, use = "pairwise.complete.obs")
-corr5 <- corrplot(cor_matrix5, method = "circle", tl.col = "black", tl.srt = 45)
-
-#6
-cor_matrix6 <- cor(complete_data[target_columns], subset_6, use = "pairwise.complete.obs")
-corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
-```
-
-```{r}
-complete_data <- data_cleaning_2 %>%
-  select(all_of(significant_vars)) 
-
-# Recalculate num_cols because it's just an integer, not data
-num_cols <- ncol(complete_data)
-
-# Calculate the number of columns in each subset (for approximately equal splits)
-subset_size <- ceiling(num_cols / 6)
-
-# Correctly create subsets based on columns
-subset_1 <- complete_data[, 1:subset_size]
-subset_2 <- complete_data[, (subset_size + 1):(2 * subset_size)]
-subset_3 <- complete_data[, (2 * subset_size + 1):(3 * subset_size)]
-subset_4 <- complete_data[, (3 * subset_size + 1):(4 * subset_size)]
-subset_5 <- complete_data[, (4 * subset_size + 1):(5 * subset_size)]
-subset_6 <- complete_data[, (5 * subset_size + 1):num_cols]
-
-
-#1
-cor_matrix1 <- cor(subset_1)
-corrplot(cor_matrix1, method = "circle", tl.col = "black", tl.srt = 45)
-
-#2
-cor_matrix2 <- cor(subset_2)
-corrplot(cor_matrix2, method = "circle", tl.col = "black", tl.srt = 45)
-
-#3
-cor_matrix3 <- cor(subset_3)
-corr3 <- corrplot(cor_matrix3, method = "circle", tl.col = "black", tl.srt = 45)
-
-#4
-cor_matrix4 <- cor(subset_4)
-corr4 <- corrplot(cor_matrix4, method = "circle", tl.col = "black", tl.srt = 45)
-
-#5
-cor_matrix5 <- cor(subset_5)
-corr5 <- corrplot(cor_matrix5, method = "circle", tl.col = "black", tl.srt = 45)
-
-#6
-cor_matrix6 <- cor(subset_6)
-corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
-```
-
-According to the matrix, we see that the variables;
-
-variables starting with qc6\_ with each other,
-
-variables starting with qc12\_ with each other,
-
-variables starting with qc13\_ with each other,
-
-variables starting with qc15\_ with each other,
-
-d62_3, D62t, netuse with each other.
-
-Here we see many columns with NA values, especially towards the end.
-
 ```{r}
 # Check for NA values in the data
 na_summary <- colSums(is.na(complete_data))
@@ -1302,8 +1182,7 @@ multilevel analysis on the countries, join with country level data
 IGNORE THIS ! imputation code
 
 ```{r}
-library(mice)
-library(missForest)
+
 
 # Define the number of imputations
 num_imputations <- 5  # Adjust as needed
@@ -1330,16 +1209,108 @@ imputed_datasets <- complete(imputed_data)
 
 Alex part of the code
 
-impute something?
+impute something? years of eductaion variable! age_stop_education
 
 ```{r}
+library(mice)
+library(missForest)
 
+# Specify the variables for imputation
+impute_vars <- c("age_stopped_education", "d11", "political_ideology") # Add other variables as needed
+
+# Create a copy of the original dataset with only the specified variables
+impute_data <- Data_final_Ind[, impute_vars]
+
+# Perform multiple imputation using polyreg method
+num_imputations <- 5  # Adjust as needed
+imputed_data <- mice(impute_data, method = "pmm", m = num_imputations)
 ```
 
 make the binary predictive model using the new merged and reduced dataset, try all the models to see which is best
 
 ```{r}
+#We want to check if there are more Yes' or more Nos to see whicgh would be better to predict
+Data_final_Ind |> 
+  count(binary_qc19==1) 
+
+## Definition of yes
+Data_final_Ind$Yes = factor(Data_final_Ind$binary_qc19==1) # less than 5 over 20
+Data_final_Ind$binary_qc19 = NULL
+
+prop.table(table(Data_final_Ind$Yes))
+```
+
+Here we split the data into testing and training with a 75% split.
+
+```{r}
+set.seed(123)
+
+in_train <- createDataPartition(Data_final_Ind$Yes, p = 0.75, list = FALSE)  # 75% for training
+
+# Extracting the indices from the first column of in_train
+indices <- in_train[, 1]
+
+# Subsetting the data frame using the extracted indices
+training <- Data_final_Ind[indices, ]
+
+testing <- Data_final_Ind[-indices,]
+nrow(training)
+nrow(testing)
+```
+
+### Logistic regression
+
+Remember predictions are posterior probabilities:
+
+```{r}
+logit.model = glm(Yes ~ . , data = training, family = binomial)
+
+ctrl <- trainControl(method = "cv") # 10-fold cross-validation number = 10) 
+significant_vars <- c()
+
+#remove rows with NAs
+training <- na.omit(training)
+
+summary(logit.model)
+
+#use the testing data to predict the target variable
+probability <- predict(logit.model, newdata=testing, type='response')
+head(probability)
+
+prediction <- as.factor(ifelse(probability > 0.5, TRUE, FALSE))
+head(prediction)
+
 
 ```
 
-figure out what to do with DK and refusal
+LDA model
+
+```{r}
+# Assume 'my_data' is your dataset with predictors and response variable
+# Create the LDA model
+lda_. model <- lda(Yes ~ ., data = training)
+
+# Summary of the LDA model
+summary(lda_model)
+
+# Make predictions using the LDA model
+lda_probability <- predict(lda_model, newdata = testing)$posterior
+
+# Convert the probabilities into a data frame
+lda_probability_df <- as.data.frame(lda_probability)
+
+# Display the head of the probabilities
+head(lda_probability_df)
+
+```
+
+\
+
+Performance: confusion matrix
+
+```{r}
+confusionMatrix(prediction, testing$Fail)$table
+confusionMatrix(prediction, testing$Fail)$overall[1:2]
+```
+
+Good behaviour in practice\
