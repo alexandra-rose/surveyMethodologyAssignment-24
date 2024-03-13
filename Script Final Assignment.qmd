@@ -1126,7 +1126,7 @@ Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes),
                         full_join, by = "country_name")
 
 
-Country_level <- left_join(Country_level, binary_qc19_data %>% select(country_name, count_yes,count_no),  by = "country_name")
+#Country_level <- left_join(Country_level, binary_qc19_data %>% select(country_name, prop_qc19_yes),  by = "country_name")
 
 ```
 
