@@ -51,13 +51,13 @@ Cleaning specific variables to determine which are the more important once for o
 ```{r}
 data_cleaning_1 <- data %>%
   select(
-         -c(studyno1, studyno2, doi, version, edition,survey,w1:w86,wex))
+         -c(studyno1, studyno2, doi, version, edition,survey))
 
 data_cleaning_2 <- data_cleaning_1 %>% 
   select(serialid, everything())
 ```
 
-#### Country
+#### Country ID
 
 ```{r}
 # creating a variable for country name to be more organized
@@ -100,37 +100,6 @@ data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
 
 ```
 
-#### Age
-
-The different categories for age will be transformed as factor for better analysis. There are 3 variables that represent four, six and seven categories of age.
-
-```{r}
-data_cleaning_3 <- data_cleaning_2 %>%
-  mutate(
-    Cat_age_four = factor(d11r1, 
-                           labels = c("15 - 24", "25 - 39", "40 - 54", ">=55")),
-    Cat_age_six = factor(d11r2, 
-                           labels = c("15 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", ">=65")),
-    Cat_age_seven = factor(d11r3, 
-                           labels = c("15 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", "65 - 74", ">=75"))
-  )
-
-```
-
-#### Gender
-
-```{r}
-data_cleaning_4 <- data_cleaning_3 %>%
-  mutate(
-    gender = case_when(
-      d10 == 1 ~ "male",
-      d10 == 2 ~ "female"
-    ),
-    gender = factor(gender, levels = c("male", "female"))
-  )
-
-```
-
 ### Extra Country Level Variables
 
 We believe that the data was missing some variables related to the legality aspect in a country level so we found this data.
@@ -158,7 +127,6 @@ Looking into the extra data set
 
 ```{r}
 Data_Extra_by_Country$country_name <- factor(Data_Extra_by_Country$country_name)
-summary(Data_Extra_by_Country)
 ```
 
 The variable chosen is the the following:
@@ -169,7 +137,7 @@ Data_Extra_by_Country <- Data_Extra_by_Country %>%
 ```
 
 ```{r}
-merged_df <- merge(data_cleaning_4, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
+merged_df <- merge(data_cleaning_2, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
 ```
 
 ## Descriptive Analysis
@@ -912,7 +880,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-leaflet(df_plot) %>%
+plot <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -922,7 +890,7 @@ leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-
+plot
 ```
 
 **Association**
@@ -939,44 +907,264 @@ With this results we can conclude that there is a statistically significant rela
 
 **Dependent Variable (qc19)**
 
-The dependent variable takes the values
+It relates to this question:
+
+*Do you think that tran*sgender persons should be able to change their civil documents to match their inner gender identity?
+
+It takes the values:
 
 -   1 for "Yes"
 
 -   2 for "No"
 
--   3 for "Don't Know"
+3 for "Don't Know"
+
+Binary in an individual level
 
 ```{r}
 # Our dependent variable will be trated as binary
-df_descriptive$binary_qc19 <- ifelse(df_descriptive$qc19 == 1, 1, ifelse(df_descriptive$qc19 == 2, 0, NA))
+df_descriptive <- df_descriptive %>%
+  mutate(binary_qc19 = ifelse(qc19 == 1, 1, 
+                              ifelse(qc19 == 2, 0, NA)))
+# there are 3280 NA's
 
-# binary_qc19 is our binary variable with 1 for Yes, 0 for No, and NA for Don't know
-summary(df_descriptive$binary_qc19)
+Individual_data <- df_descriptive %>%
+  select(serialid,country_name,isocntry, binary_qc19)
+```
+
+Binary in a country level.
+
+```{r}
+#frederick i believe created already a variable for prop yes, ask
+```
+
+INDIVIDUAL LEVEL(not yet ready)
+
+**Gender**
+
+```{r}
+df_descriptive <- df_descriptive %>%
+  mutate(
+    male = car::recode(d10, "2=0; 1=1")
+  )
+
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, male), by = "serialid")
+```
+
+**Age**
+
+The different categories for age will be transformed as factor for better analysis. There are 3 variables that represent four, six and seven categories of age.
+
+```{r}
+df_descriptive <- df_descriptive %>%
+  mutate(
+    Cat_age_four = factor(d11r1, 
+                           labels = c("15 - 24", "25 - 39", "40 - 54", ">=55")),
+    Cat_age_six = factor(d11r2, 
+                           labels = c("15 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", ">=65")),
+    Cat_age_seven = factor(d11r3, 
+                           labels = c("15 - 24", "25 - 34", "35 - 44", "45 - 54", "55 - 64", "65 - 74", ">=75"))
+  )
+
+
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, Cat_age_four,Cat_age_six,Cat_age_seven), by = "serialid")
 ```
 
 ```{r}
-df_descriptive <- left_join(df_descriptive, df_country_1 %>% select(country_name, prop_gndr_bin), by = "country_name")
-
-df_descriptive <- left_join(df_descriptive, df_country_3 %>% select(country_name, prop_lgb_yes), by = "country_name")
-
-
-df_descriptive <- left_join(df_descriptive, df_country_2 %>% select(country_name, prop_dis_wide), by = "country_name")
-#qc1
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, d11), by = "serialid")
 ```
 
-# FINAL DATA SET needs to be checked.
+**Political_ideology**
+
+In political matters people talk of "the left" and "the right". How would you place your views on this scale?
 
 ```{r}
-data_final <- df_descriptive |> 
-  select(serialid,country_name,binary_qc19,qc19,Cat_age_four,Cat_age_six,Cat_age_seven,gender, qc20_multinominal,prop_gndr_bin,d1_ordinal, sd3_cat, sd1_7_multinomial,d10,d11, d8,d60_ordinal,sd2t,sd2_5, prop_dis_wide, qc15_1_ordinal, prop_lgb_yes,d25,adp_general)
 
+df_descriptive <- df_descriptive %>% 
+  #filter(!d1 %in% c(97, 98)) %>%
+  rename(political_ideology = d1) 
+
+#removes observations with 'Non-response' and 'Don't know'
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, political_ideology), by = "serialid")
+
+```
+
+**Religion_cat**
+
+Religion - Do you consider yourself to be…?
+
+```{r}
+df_descriptive <- df_descriptive %>%
+  mutate(Religion_cat = case_when(
+    sd3 == 1 ~ "Catholic",
+    sd3 == 2 ~ "Orthodox Christian",
+    sd3 == 3 ~ "Protestant",
+    sd3 == 4 ~ "Other Christian",
+    sd3 == 5 ~ "Jewish",
+    sd3 == 6 ~ "Muslim - Shia",
+    sd3 == 7 ~ "Muslim - Sunni",
+    sd3 == 8 ~ "Other Muslim",
+    sd3 == 9 ~ "Sikh",
+    sd3 == 10 ~ "Buddhist",
+    sd3 == 11 ~ "Hindu",
+    sd3 == 12 ~ "Atheist",
+    sd3 == 13 ~ "Non believer or agnostic",
+    sd3 == 14 ~ "Other",
+    sd3 == 15 ~ "Refusal (SPONTANEOUS)",
+    sd3 == 16 ~ "DK",
+    TRUE ~ NA_character_ # This will assign NA to any code that doesn't match
+  )) 
+#%>%
+  # Removing rows with NA in sd3_cat if desired
+  #filter(!is.na(sd3_cat))
+
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, Religion_cat), by = "serialid")
+
+```
+
+**sd1_7**
+
+Do you have friends or acquaintances who are transgender?
+
+```{r}
+#already recoded contact part
+
+data <- data %>%
+  mutate(sd1_7_factor = factor(sd1_7, 
+              levels = c(1, 2, 3, 4),
+              labels = c("Yes", "No", "Refusal (SPONTANEOUS)", "Don't know")))
+
+#df_descriptive <- df_descriptive %>%
+  #mutate(sd1_7_binary = case_when(
+    #sd1_7 == 1 ~ 1,    # Yes
+    #sd1_7 == 2 ~ 0,    # No
+    #TRUE ~ NA_real_  ))   # Refusal and Don't know are treated as missing
+
+
+Individual_data <- left_join(Individual_data, data %>% select(serialid, sd1_7_factor), by = "serialid")
+```
+
+**d8**
+
+How old were you when you stopped full‐time education?
+
+```{r}
+
+df_descriptive <- df_descriptive %>%
+  mutate(age_stopped_education = case_when(
+    d8 == 98 ~ NA_real_,  # Refusal treated as missing
+    d8 == 99 ~ NA_real_,  # Don't know treated as missing
+    d8 == 00 ~ NA_real_,  # Still Studying can be treated as missing or given a special code
+    d8 == 01 ~ NA_real_,  # No Education can be treated as missing or given a special code
+    TRUE ~ as.numeric(d8) # Convert all other responses to numeric
+  ))
+
+
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, age_stopped_education), by = "serialid")
+```
+
+**d60_ordinal** During the last twelve months, would you say you had difficulties to pay your bills at the end of the month…?
+
+```{r}
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, d60_ordinal), by = "serialid")
+
+```
+
+**Sexual minority(sd2_5)**
+
+Where you live, do you consider yourself to be part of a sexual minority?
+
+```{r}
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, sd2_5), by = "serialid")
+```
+
+**d25**
+
+Would you say you live in a...?
+
+```{r}
+df_descriptive <- df_descriptive %>%
+  mutate(area_type = factor(d25, 
+                                levels = c(1, 2, 3, 4),
+                                labels = c("Rural area or village", 
+                                           "Small or middle-sized town", 
+                                           "Large town", 
+                                           "Don't know")))
+
+
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, area_type), by = "serialid")
+
+```
+
+**qc15**
+
+```{r}
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc15_1_ordinal), by = "serialid")
+
+```
+
+COUNTRY LEVEL
+
+**Variables created earlier country level.**
+
+Examining the influence of country-level proportion of respondents to a particular outcome. Aimed at understanding differences between countries on various outcomes.
+
+```{r}
+Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes), 
+                             df_country_2 %>% select(-prop_qc19_yes), 
+                             df_country_3 %>% select(-prop_qc19_yes)), 
+                        full_join, by = "country_name")
+
+
+Country_level <- left_join(Country_level, df_country_1 %>% select(country_name, prop_qc19_yes),  by = "country_name")
+
+```
+
+**adp_general**
+
+A country-level variable indicating general legal protections against discrimination for transgender individuals, with 0 representing "No" (no protections) and 1 representing "Yes" (protections exist)
+
+```{r}
+Country_level <- left_join(Country_level, df_descriptive %>% 
+  select(country_name, trans_legal_protection = adp_general) %>% 
+  distinct(), by = "country_name")
+
+```
+
+**Country_name**
+
+To control for country effects or to specifically examine how outcomes vary by country we will include the variable created earlier, "country_name".
+
+IDEA
+
+Unemployment by country, got the excel just in case
+
+GDP by country
+
+```{r}
+#faltannn
+#qc1,sd2t, qc20_multinomial
+```
+
+DATA FINAL COUNTRY
+
+```{r}
+Data_final_Cntry <- Country_level |>
+   select(country_name, prop_qc19_yes , prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection)
+```
+
+DATA FINAL INDIVIDUAL
+
+```{r}
+Data_final_Ind <- Individual_data |> 
+  select(serialid,country_name,isocntry,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
+          
 ```
 
 # Correlation between the significant numeric variables
 
 ```{r}
-corr_data <- data_cleaning_4 |> 
+corr_data <- data_cleaning_2 |> 
   select(-non_significant_vars) |> 
   select(-c(qa4t_1:qa6_8)) |> 
   mutate_if(is.character, as.numeric) # because the correlation matrix can only be calculated with numeric data, but this creates many NAs which need to be imputed
@@ -1039,7 +1227,7 @@ corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
 ```
 
 ```{r}
-complete_data <- data_cleaning_4 %>%
+complete_data <- data_cleaning_2 %>%
   select(all_of(significant_vars)) 
 
 # Recalculate num_cols because it's just an integer, not data
