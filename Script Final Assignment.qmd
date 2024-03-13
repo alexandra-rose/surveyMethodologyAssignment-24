@@ -1237,11 +1237,11 @@ exp(coef(logit_model3))
 
 **sd1_7_factor:** Responding "No" to having friends or acquaintances who are transgender decreases the odds of the supporting Transgender individuals in being able to change their civil documents by about 45.5%, in comparison to the baseline category.
 
-**d60_ordinal:** Responding that during the last twele month you had difficulties from time to time in paying your bills, slightly increases the odds of being in favor of letting transgender individuals to change their civil document by about 7.5%, while "Almost never/never" increases the odds by about 26.3%.
+**d60_ordinal:** Responding that during the last twelve month you had difficulties from time to time in paying your bills, slightly increases the odds of being in favor of letting transgender individuals to change their civil document by about 7.5%, while "Almost never/never" increases the odds by about 26.3%.
 
 **qc15_1_ordinal:** Tending to agree that Gay, lesbian and bisexual people should have the same rights as heterosexual people, decreases the odds by about 61.5%, while "Totally disagree" decreases the odds by about 92.9%.
 
-### Regression for Individual and Country Level Analysis. 
+### Regression for Individual and Country Level Analysis.
 
 ## Prediction by Individual Level
 
