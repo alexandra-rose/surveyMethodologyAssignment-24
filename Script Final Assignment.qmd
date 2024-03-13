@@ -34,6 +34,8 @@ library(sf)
 library(ggplot2)
 library(leaflet)
 library(car)
+library(caret)
+
 ```
 
 ### Data
@@ -900,7 +902,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-plot <- leaflet(df_plot) %>%
+plot1 <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -910,7 +912,7 @@ plot <- leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-plot
+plot1
 ```
 
 **Association**
@@ -922,6 +924,10 @@ chisq.test(table)
 ```
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
+
+Descriptive analysis for GDP
+
+Descriptive analysis for Unemployment
 
 ## Modeling
 
@@ -946,21 +952,7 @@ df_descriptive <- df_descriptive %>%
 # there are 3280 NA's
 
 Individual_data <- df_descriptive %>%
-  select(serialid,country_name,isocntry, binary_qc19)
-```
-
-Binary in a country level.
-
-```{r}
-# Calculate the counts of "Yes" and "No" responses for each country
-binary_qc19_data <- df_descriptive %>%
-  group_by(country_name) %>%
-  summarise(
-    count_yes = sum(binary_qc19 == 1, na.rm = TRUE),  # Count of "Yes" responses
-    count_no = sum(binary_qc19 == 0, na.rm = TRUE)   # Count of "No" responses
-  ) %>%
-  ungroup()
-
+  select(serialid,country_name, binary_qc19)
 ```
 
 INDIVIDUAL LEVEL
@@ -1005,10 +997,13 @@ In political matters people talk of "the left" and "the right". How would you pl
 
 ```{r}
 
-df_descriptive <- df_descriptive %>% 
-  filter(!d1 %in% c(97, 98)) %>%
-  rename(political_ideology = d1) 
+df_descriptive$d1_ordinal <- relevel(df_descriptive$d1_ordinal, ref = "Left") 
+df_descriptive$d1_ordinal[df_descriptive$d1_ordinal %in% c("Non-response", "Don't know", 98)] <- NA
 
+df_descriptive$d1_ordinal <- factor(df_descriptive$d1_ordinal)
+
+df_descriptive <- df_descriptive %>% 
+  rename(political_ideology = d1_ordinal) 
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, political_ideology), by = "serialid")
 
@@ -1172,7 +1167,7 @@ DATA FINAL COUNTRY
 
 ```{r}
 Data_final_Cntry <- Country_level |>
-   select(count_yes,count_no , prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection, Gdp_per_capita, Unemployment)
+   select(prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection, Gdp_per_capita, Unemployment)
 ```
 
 DATA FINAL INDIVIDUAL
@@ -1180,7 +1175,7 @@ DATA FINAL INDIVIDUAL
 ```{r}
 
 Data_final_Ind <- Individual_data |> 
-  select(serialid,country_name,isocntry,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
+  select(serialid,country_name,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
 
 ```
 
@@ -1212,25 +1207,74 @@ There are several variables that are not significant. We also tried the regressi
 logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
-  reg <- summary(logit_model2)
+summary(logit_model2)
 
-print(reg)
+
 ```
 
 We are going to transform the age variable to include a quadratic term as we suspect the relationship between age and the dependent variable is not linear.
 
 ```{r}
-logit_model2 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+logit_model3 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
-summary(logit_model2)
+summary(logit_model3)
 ```
 
-Regression for Individual and Country Level Analysis.
+**Interpretation**
+
+```{r}
+exp(coef(logit_model3))
+```
+
+**Male:** The odds of supporting Transgender individuals of being able to change their civil document to match their inner gender are about 25.4% lower for males compared to females, since the odds ratio is 0.74.
+
+**d11:** For each one-year increase in age, the odds of the being supportive of Transgender individuals changing their civil document increase by about 1.9%.
+
+**political_ideology:** Identifying with the political ideology "Right" decreases the odds of the supporting the change in civil documents by transgender individuals to match their inner gender identity by about 22.8%, compared to the baseline category of political ideology.
+
+**Religion_cat:** Identifying as having Catholics faith have a decrease in the odds of about 21.2%, while identifying as having Jewish faith have an odds increase of about 2.3%, in comparison to the baseline category religion.
+
+**sd1_7_factor:** Responding "No" to having friends or acquaintances who are transgender decreases the odds of the supporting Transgender individuals in being able to change their civil documents by about 45.5%, in comparison to the baseline category.
+
+**d60_ordinal:** Responding that during the last twele month you had difficulties from time to time in paying your bills, slightly increases the odds of being in favor of letting transgender individuals to change their civil document by about 7.5%, while "Almost never/never" increases the odds by about 26.3%.
+
+**qc15_1_ordinal:** Tending to agree that Gay, lesbian and bisexual people should have the same rights as heterosexual people, decreases the odds by about 61.5%, while "Totally disagree" decreases the odds by about 92.9%.
+
+### Regression for Individual and Country Level Analysis. 
+
+## Prediction by Individual Level
+
+We want to create a model that is able to predict the support for transgender individuals changing civil documents.
+
+### Definition of support
+
+```{r}
+prop_table_yes_no <- prop.table(table(factor(data_reg_ind$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))))
+
+prop_table_yes_no
+```
+
+We need to find the factors that are causing this 60% of support for our dependent variable..
+
+### Data splitting
+
+```{r}
+
+set.seed(123)
+
+in_train <- createDataPartition(y = data_reg_ind$binary_qc19, p = 0.8, list = FALSE)
+
+in_train <- in_train[, 1]
+
+training <- data_reg_ind[in_train, ]
+testing <- data_reg_ind[-in_train, ]
+```
 
 //////////////////////////
 
 ```{r}
+ 
 # Check for NA values in the data
 na_summary <- colSums(is.na(complete_data))
  
