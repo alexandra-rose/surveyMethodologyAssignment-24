@@ -33,6 +33,7 @@ library(rnaturalearth)
 library(sf)
 library(ggplot2)
 library(leaflet)
+library(car)
 ```
 
 ### Data
@@ -439,8 +440,8 @@ ggplot(aes(x = country_name, y = share)) +
 df_descriptive <-
   df_descriptive |> 
   mutate(
-    sd1_7 = car::recode(sd1_7, "1=1; 2=0; 3=NA; 4=2"),
-    sd1_7_multinomial = factor(sd1_7, levels = c(0, 1, 2), labels = c("No", "Yes", "Don't know"))
+    sd1_7_NA = car::recode(sd1_7, "1=1; 2=0; 3=NA; 4=2"),
+    sd1_7_multinomial = factor(sd1_7_NA, levels = c(0, 1, 2), labels = c("No", "Yes", "Don't know"))
   )
 
 CrossTable(df_descriptive$sd1_7_multinomial, df_descriptive$qc19_multinominal,
@@ -880,7 +881,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-plot <- leaflet(df_plot) %>%
+plot1 <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -890,7 +891,7 @@ plot <- leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-plot
+plot1
 ```
 
 **Association**
@@ -917,12 +918,9 @@ It takes the values:
 
 -   2 for "No"
 
-3 for "Don't Know"
-
-Binary in an individual level
+We will take the variable as Binary in the individual level
 
 ```{r}
-# Our dependent variable will be trated as binary
 df_descriptive <- df_descriptive %>%
   mutate(binary_qc19 = ifelse(qc19 == 1, 1, 
                               ifelse(qc19 == 2, 0, NA)))
@@ -935,10 +933,17 @@ Individual_data <- df_descriptive %>%
 Binary in a country level.
 
 ```{r}
-#frederick i believe created already a variable for prop yes, ask
+
+binary_qc19_data <- df_descriptive %>%
+  group_by(country_name) %>%
+  summarise(
+    prop_qc19_yes = mean(binary_qc19, na.rm = TRUE) * 100 
+  ) %>%
+  ungroup() 
+
 ```
 
-INDIVIDUAL LEVEL(not yet ready)
+INDIVIDUAL LEVEL
 
 **Gender**
 
@@ -981,10 +986,10 @@ In political matters people talk of "the left" and "the right". How would you pl
 ```{r}
 
 df_descriptive <- df_descriptive %>% 
-  #filter(!d1 %in% c(97, 98)) %>%
+  filter(!d1 %in% c(97, 98)) %>%
   rename(political_ideology = d1) 
 
-#removes observations with 'Non-response' and 'Don't know'
+
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, political_ideology), by = "serialid")
 
 ```
@@ -994,29 +999,20 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 Religion - Do you consider yourself to be…?
 
 ```{r}
+
 df_descriptive <- df_descriptive %>%
   mutate(Religion_cat = case_when(
-    sd3 == 1 ~ "Catholic",
-    sd3 == 2 ~ "Orthodox Christian",
-    sd3 == 3 ~ "Protestant",
-    sd3 == 4 ~ "Other Christian",
-    sd3 == 5 ~ "Jewish",
-    sd3 == 6 ~ "Muslim - Shia",
-    sd3 == 7 ~ "Muslim - Sunni",
-    sd3 == 8 ~ "Other Muslim",
-    sd3 == 9 ~ "Sikh",
-    sd3 == 10 ~ "Buddhist",
-    sd3 == 11 ~ "Hindu",
-    sd3 == 12 ~ "Atheist",
-    sd3 == 13 ~ "Non believer or agnostic",
-    sd3 == 14 ~ "Other",
-    sd3 == 15 ~ "Refusal (SPONTANEOUS)",
-    sd3 == 16 ~ "DK",
-    TRUE ~ NA_character_ # This will assign NA to any code that doesn't match
-  )) 
-#%>%
-  # Removing rows with NA in sd3_cat if desired
-  #filter(!is.na(sd3_cat))
+    sd3_cat == "Catholic" ~ "Catholic",
+    sd3_cat == "Orthodox Christian" ~ "Orthodox Christian",
+    sd3_cat == "Protestant" ~ "Protestant",
+    sd3_cat == "Other Christian" ~ "Other Christian",
+    sd3_cat == "Jewish" ~ "Jewish",
+    sd3_cat == "Muslim" ~ "Muslim", 
+    sd3_cat == "Other" ~ "Other Religion",
+    sd3_cat == "Atheist | Agnostic" ~ "Atheist | Agnostic",
+    sd3_cat == "Other" ~ "Other Belief",
+    TRUE ~ "Other"
+  ))
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, Religion_cat), by = "serialid")
 
@@ -1027,21 +1023,13 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 Do you have friends or acquaintances who are transgender?
 
 ```{r}
-#already recoded contact part
 
-data <- data %>%
+df_descriptive <- df_descriptive %>%
   mutate(sd1_7_factor = factor(sd1_7, 
               levels = c(1, 2, 3, 4),
               labels = c("Yes", "No", "Refusal (SPONTANEOUS)", "Don't know")))
 
-#df_descriptive <- df_descriptive %>%
-  #mutate(sd1_7_binary = case_when(
-    #sd1_7 == 1 ~ 1,    # Yes
-    #sd1_7 == 2 ~ 0,    # No
-    #TRUE ~ NA_real_  ))   # Refusal and Don't know are treated as missing
-
-
-Individual_data <- left_join(Individual_data, data %>% select(serialid, sd1_7_factor), by = "serialid")
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, sd1_7_factor), by = "serialid")
 ```
 
 **d8**
@@ -1058,6 +1046,7 @@ df_descriptive <- df_descriptive %>%
     d8 == 01 ~ NA_real_,  # No Education can be treated as missing or given a special code
     TRUE ~ as.numeric(d8) # Convert all other responses to numeric
   ))
+
 
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, age_stopped_education), by = "serialid")
@@ -1096,11 +1085,17 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```
 
-**qc15**
+**qc15_1_ordinal**
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc15_1_ordinal), by = "serialid")
 
+```
+
+**qc1_8_ordinal**
+
+```{r}
+Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc1_8_ordinal), by = "serialid")
 ```
 
 COUNTRY LEVEL
@@ -1116,7 +1111,7 @@ Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes),
                         full_join, by = "country_name")
 
 
-Country_level <- left_join(Country_level, df_country_1 %>% select(country_name, prop_qc19_yes),  by = "country_name")
+Country_level <- left_join(Country_level, binary_qc19_data %>% select(country_name, prop_qc19_yes),  by = "country_name")
 
 ```
 
@@ -1139,12 +1134,7 @@ IDEA
 
 Unemployment by country, got the excel just in case
 
-GDP by country
-
-```{r}
-#faltannn
-#qc1,sd2t, qc20_multinomial
-```
+GDP by country, got the excel just in case
 
 DATA FINAL COUNTRY
 
@@ -1161,128 +1151,46 @@ Data_final_Ind <- Individual_data |>
           
 ```
 
-# Correlation between the significant numeric variables
+Regression Individual Level
 
 ```{r}
-corr_data <- data_cleaning_2 |> 
-  select(-non_significant_vars) |> 
-  select(-c(qa4t_1:qa6_8)) |> 
-  mutate_if(is.character, as.numeric) # because the correlation matrix can only be calculated with numeric data, but this creates many NAs which need to be imputed
+data_reg_ind <- Data_final_Ind |> 
+  select(binary_qc19,male, d11 ,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
 
-target_columns <- c("qc19") # we pick 2 target variables because we are interested to see the correlation of th
 
-# Check for NA values in the data
-na_summary <- colSums(is.na(corr_data))
-
-# Print columns with NA values
-cols_with_na <- names(na_summary[na_summary > 0])
-print(cols_with_na)
-
-# Convert target_columns to numeric
-corr_data[target_columns] <- lapply(corr_data[target_columns], as.numeric)
-
-# Filter out rows with missing values in target columns
-corr_data <- corr_data[complete.cases(corr_data[target_columns]), ]
-
-#defining columns that will work for the correlation matrix
-numeric_cols <- corr_data[corr_data]
-
-# Determine the number of columns in complete_data
-num_cols <- ncol(corr_data)
-
-# Calculate the number of columns in each subset (assuming you want approximately equal splits)
-subset_size <- ceiling(num_cols / 6)
-
-# Split complete_data into three subsets
-subset_1 <- numeric_cols[, 1:subset_size]
-subset_2 <- numeric_cols[, (subset_size + 1):(2 * subset_size)]
-subset_3 <- numeric_cols[, (2 * subset_size + 1):(3 * subset_size)]
-subset_4 <- numeric_cols[, (3 * subset_size + 1):(4 * subset_size)]
-subset_5 <- numeric_cols[, (4 * subset_size + 1):(5 * subset_size)]
-subset_6 <- numeric_cols[, (5 * subset_size + 1):num_cols]
-
-#1
-cor_matrix1 <- cor(corr_data[target_columns], subset_1, use = "pairwise.complete.obs")
-corr1 <- corrplot(cor_matrix1, method = "circle", tl.col = "black", tl.srt = 45)
-
-#2
-cor_matrix2 <- cor(complete_data[target_columns], subset_2, use = "pairwise.complete.obs")
-corr2 <- corrplot(cor_matrix2, method = "circle", tl.col = "black", tl.srt = 45)
-
-#3
-cor_matrix3 <- cor(complete_data[target_columns], subset_3, use = "pairwise.complete.obs")
-corr3 <- corrplot(cor_matrix3, method = "circle", tl.col = "black", tl.srt = 45)
-
-#4
-cor_matrix4 <- cor(complete_data[target_columns], subset_4, use = "pairwise.complete.obs")
-corr4 <- corrplot(cor_matrix4, method = "circle", tl.col = "black", tl.srt = 45)
-
-#5
-cor_matrix5 <- cor(complete_data[target_columns], subset_5, use = "pairwise.complete.obs")
-corr5 <- corrplot(cor_matrix5, method = "circle", tl.col = "black", tl.srt = 45)
-
-#6
-cor_matrix6 <- cor(complete_data[target_columns], subset_6, use = "pairwise.complete.obs")
-corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
+data_reg_ind = data_reg_ind %>%
+  filter(!is.na(binary_qc19))
 ```
 
 ```{r}
-complete_data <- data_cleaning_2 %>%
-  select(all_of(significant_vars)) 
 
-# Recalculate num_cols because it's just an integer, not data
-num_cols <- ncol(complete_data)
+logit_model <- glm(binary_qc19 ~ ., family=binomial(link='logit'), data= data_reg_ind)
 
-# Calculate the number of columns in each subset (for approximately equal splits)
-subset_size <- ceiling(num_cols / 6)
-
-# Correctly create subsets based on columns
-subset_1 <- complete_data[, 1:subset_size]
-subset_2 <- complete_data[, (subset_size + 1):(2 * subset_size)]
-subset_3 <- complete_data[, (2 * subset_size + 1):(3 * subset_size)]
-subset_4 <- complete_data[, (3 * subset_size + 1):(4 * subset_size)]
-subset_5 <- complete_data[, (4 * subset_size + 1):(5 * subset_size)]
-subset_6 <- complete_data[, (5 * subset_size + 1):num_cols]
-
-
-#1
-cor_matrix1 <- cor(subset_1)
-corrplot(cor_matrix1, method = "circle", tl.col = "black", tl.srt = 45)
-
-#2
-cor_matrix2 <- cor(subset_2)
-corrplot(cor_matrix2, method = "circle", tl.col = "black", tl.srt = 45)
-
-#3
-cor_matrix3 <- cor(subset_3)
-corr3 <- corrplot(cor_matrix3, method = "circle", tl.col = "black", tl.srt = 45)
-
-#4
-cor_matrix4 <- cor(subset_4)
-corr4 <- corrplot(cor_matrix4, method = "circle", tl.col = "black", tl.srt = 45)
-
-#5
-cor_matrix5 <- cor(subset_5)
-corr5 <- corrplot(cor_matrix5, method = "circle", tl.col = "black", tl.srt = 45)
-
-#6
-cor_matrix6 <- cor(subset_6)
-corr6 <- corrplot(cor_matrix6, method = "circle", tl.col = "black", tl.srt = 45)
+summary(logit_model)
 ```
 
-According to the matrix, we see that the variables;
+There are several variables that are not significant. We also tried the regression with the categories of variables for age that we had and they were also not significant. We will now proceed to reduce the variables used.
 
-variables starting with qc6\_ with each other,
+```{r}
+logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+                    family = binomial(link = "logit"), data = data_reg_ind)
 
-variables starting with qc12\_ with each other,
+summary(logit_model2)
 
-variables starting with qc13\_ with each other,
 
-variables starting with qc15\_ with each other,
+```
 
-d62_3, D62t, netuse with each other.
+We are going to transform the age variable to include a quadratic term as we suspect the relationship between age and the dependent variable is not linear.
 
-Here we see many columns with NA values, especially towards the end.
+```{r}
+logit_model2 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+                    family = binomial(link = "logit"), data = data_reg_ind)
+
+summary(logit_model2)
+
+```
+
+//////////////////////////
 
 ```{r}
 # Check for NA values in the data
