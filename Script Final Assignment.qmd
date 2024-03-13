@@ -1226,18 +1226,6 @@ logit_model2 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology + 
 summary(logit_model2)
 ```
 
-### Regression Country Level
-
-Due to our dependent variable now being a proportion we will use another type of regression model that accommodates for this.
-
-```{r}
-glm_model <- glm(cbind(count_yes, count_no) ~ ., 
-                 family = binomial(link = "logit"), data = Data_final_Cntry)
-
-summary(glm_model)
-
-```
-
 Regression for Individual and Country Level Analysis.
 
 //////////////////////////
