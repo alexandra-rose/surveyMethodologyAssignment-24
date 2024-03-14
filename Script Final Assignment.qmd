@@ -1257,7 +1257,7 @@ summary(logit_model)
 There are several variables that are not significant. We also tried the regression with the categories of variables for age that we had and they were also not significant. We will now proceed to reduce the variables used.
 
 ```{r}
-logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology + Religion_cat + sd1_7_factor +   d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
 summary(logit_model2)
@@ -1307,9 +1307,117 @@ For more of a social perception, individuals who responded that they lack connec
 
 In conclusion, support for our dependent variables is influenced by several complex factors that interplay and shape individuals attitudes. Gender, age, political ideology, and religious affiliation are pivotal in transforming individual' s attitudes.More importantly, we want to point out that the significant impact of lacking personal connections with transgender individuals highlight the need for increased interpersonal connections and broader visibility of transgender issues. Paving the way for greater acceptance and legislative support in the progress of changing their legal documents, and thus, shifting societal norms and attitudes.
 
-### **Multilevel analysis// THIS IS MISSING**
+### **Multi-level analysis**
 
-### General Conclusion:
+In order to do a multi-leveled analysis we are going to take generalized linear mixed-effects model (GLMM). Where country_name will be the variable used as the random effects.
+
+```{r}
+Data <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
+
+#proportion variables to be between 0 and 1
+Data$prop_gndr_bin <- Data$prop_gndr_bin / 100
+Data$prop_lgb_yes <- Data$prop_lgb_yes / 100
+Data$prop_dis_wide <- Data$prop_dis_wide / 100
+#taking logs of GDP per capita
+Data$Gdp_per_capita_log <- log(Data$Gdp_per_capita)
+
+library(lme4)
+```
+
+First we check for multicolineality in the fixed effect variable
+
+```{r}
+test_model <- glm(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+                    Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
+                    prop_gndr_bin + prop_lgb_yes + trans_legal_protection +
+                    Gdp_per_capita_log + Unemployment,
+                  data = Data, family = binomial)
+
+vif_values <- vif(test_model)
+print(vif_values)
+```
+
+```{r}
+model <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+               Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
+               prop_gndr_bin + prop_lgb_yes + prop_dis_wide + trans_legal_protection +
+               Gdp_per_capita_log + Unemployment + (1 | country_name),
+               data = Data, family = binomial, 
+               control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+summary(model)
+```
+
+```{r}
+model3 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+               Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
+               prop_gndr_bin + prop_dis_wide + Unemployment + (1 | country_name),
+               data = Data, family = binomial, 
+               control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+summary(model3)
+```
+
+The model is clearly over fitted. And it suggests we have scaling issue.
+
+```{r}
+Data$d11 <- scale(Data$d11, center = TRUE, scale = TRUE)
+Data$Gdp_per_capita_log <- scale(Data$Gdp_per_capita_log, center = TRUE, scale = TRUE) 
+Data$Unemployment <- scale(Data$Unemployment, center = TRUE, scale = TRUE) 
+```
+
+```{r}
+model1 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+               Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
+               prop_gndr_bin + prop_lgb_yes + prop_dis_wide + trans_legal_protection +
+               Gdp_per_capita_log + Unemployment + (1 | country_name),
+               data = Data, family = binomial, 
+               control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+summary(model1)
+```
+
+Taking out the non-significant variables.
+
+```{r}
+model4 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+               Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
+               prop_gndr_bin + prop_dis_wide + Unemployment + (1 | country_name),
+               data = Data, family = binomial, 
+               control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+summary(model4)
+```
+
+```{r}
+AIC(model)
+BIC(model)
+
+AIC(model1)
+BIC(model1)
+
+
+AIC(model3)
+BIC(model3)
+
+AIC(model4)
+BIC(model4)
+#model4 seems to show the besT lowest AIC and BIC
+```
+
+```{r}
+plot(residuals(model4, type = "pearson"))
+```
+
+There's a large cluster of residuals around zero, which is not unexpected for binary data. We continue with the analysis.
+
+**Q-Q plot for the standardized residuals**
+
+```{r}
+library(lattice)
+qqmath(~ resid(model4, type = "pearson"), distribution = qnorm,
+       main = "Q-Q Plot of Pearson Residuals", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
+```
+
+We do not see any systematic deviations that could indicate model misspecification. The Q-Q plot shows the residuals are not perfectly normally distributed, which is common and expected pattern for a logistic regression.
+
+General Conclusion:
 
 "WHY DO WE THINKS? THAT THERE ARE Cross-Country Differences in Support Levels: This aspect involves analyzing the data to understand why different countries exhibit varying levels of support for transgender individuals obtaining official documents (cq19 in the questionnare). Individual-level indicators need to be complemented with country-level factors such as cultural norms, legal systems, history, economic-related variables, and societal views on LGBTI rights."
 
