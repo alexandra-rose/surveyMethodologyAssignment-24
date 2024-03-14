@@ -1184,7 +1184,7 @@ Data_final_Ind <- Individual_data |>
 
 ```{r}
 # Check for NA values in the data
-na_summary <- colSums(is.na(complete_data))
+na_summary <- colSums(is.na(Data_final_Ind))
  
 # Print columns with NA values
 cols_with_na_names <- names(na_summary[na_summary > 0])
@@ -1193,41 +1193,7 @@ print(cols_with_na)
 
 ```
 
-impute using fixed effects, use a vector to include the factor country
-
-multilevel analysis on the countries, join with country level data
-
-IGNORE THIS ! imputation code
-
-```{r}
-
-
-# Define the number of imputations
-num_imputations <- 5  # Adjust as needed
-
-# Perform multiple imputation using polyreg method
-imputed_data <- mice(complete_data, method = "polyreg", m = num_imputations)
-
-# Get the completed datasets
-imputed_datasets <- complete(imputed_data)
-
-# Subset the dataset to include only the variables with warnings
-vars_with_warnings <- c("d40_d11", "p7ro", "p6ro", "d15b", "p7", "p7gr_r", "p7ie", "p7gr", "p7pl_r", "p7fi", "p6si", "p6fi", "p7lv", "p6hr", "p6lt", "p7cy", "p7hu_r", "p7pt", "p7sk", "d15b_r", "p6mt", "p7pl", "p7be_r", "p6lv", "p7ro_r", "p7ee", "p6hu", "p7lt", "p7it_r2", "p7it", "p13", "p6sk", "p6cy", "p6de", "p7de", "p7it_r1", "p7es", "p7hu", "p6fr", "p7be", "p7se_r")
-subset_data <- complete_data[vars_with_warnings]
-
-# Check the structure of the subsetted dataset
-str(subset_data)
-
-# Perform multiple imputation using polyreg method
-imputed_data <- mice(subset_data, method = "polyreg", m = num_imputations)
-
-# Get the completed datasets
-imputed_datasets <- complete(imputed_data)
-```
-
-Alex part of the code
-
-impute something? years of eductaion variable! age_stop_education
+We deemed that it is unwise to impute data in the target variable, and that in the other cases imputation might cause more harm than benefit. However we considered that for the age_stopped_education variable it could be valuable to impute the data and since it is a numerical variable it may be more accurate.
 
 ```{r}
 library(mice)
@@ -1242,9 +1208,38 @@ impute_data <- Data_final_Ind[, impute_vars]
 # Perform multiple imputation using polyreg method
 num_imputations <- 5  # Adjust as needed
 imputed_data <- mice(impute_data, method = "pmm", m = num_imputations)
+
+# Combine the imputed datasets into a single dataset
+completed_data <- complete(imputed_data)
+
+# Replace the imputed variables in Data_final_Ind with the completed values
+Data_final_Ind[impute_vars] <- completed_data[impute_vars]
+
+Data_final_Ind
+```
+
+We check the distribution of the imputation and we see a generally similar distribution, so we think this imputation is promising!
+
+```{r}
+# Before imputation
+before_imputation <- Data_final_Ind$age_stopped_education
+
+# After imputation
+after_imputation <- completed_data$age_stopped_education
+
+# Create histograms for visual comparison
+par(mfrow = c(1, 2))  # Set up a 1x2 plotting layout
+
+hist(before_imputation, main = "Before Imputation", xlab = "Age Stopped Education", col = "skyblue")
+hist(after_imputation, main = "After Imputation", xlab = "Age Stopped Education", col = "lightgreen")
+
 ```
 
 make the binary predictive model using the new merged and reduced dataset, try all the models to see which is best
+
+## Predicting the binary target variable
+
+In order to be able to predict the target variable, we need to define our success that we want to predict. In this case it is support for LGBTQ minorities. We see that the data is balanced in our favor below, there are more Yes' than there are Nos, this is important as it will be easier for us to predict the Yes' than the Nos.
 
 ```{r}
 #We want to check if there are more Yes' or more Nos to see whicgh would be better to predict
@@ -1252,13 +1247,13 @@ Data_final_Ind |>
   count(binary_qc19==1) 
 
 ## Definition of yes
-Data_final_Ind$Yes = factor(Data_final_Ind$binary_qc19==1) # less than 5 over 20
+Data_final_Ind$Yes = factor(Data_final_Ind$binary_qc19==1) 
 Data_final_Ind$binary_qc19 = NULL
 
 prop.table(table(Data_final_Ind$Yes))
 ```
 
-Here we split the data into testing and training with a 75% split.
+Next we move to split the data into testing and training with a 75% split.
 
 ```{r}
 set.seed(123)
@@ -1270,13 +1265,7 @@ indices <- in_train[, 1]
 
 # Subsetting the data frame using the extracted indices
 training <- Data_final_Ind[indices, ]
-
-
-### Regression Individual Level
-
-Imputation
-
-Regression
+```
 
 ```{r}
 data_reg_ind <- Data_final_Ind |> 
@@ -1353,7 +1342,6 @@ We need to find the factors that are causing this 60% of support for our depende
 ### Data splitting
 
 ```{r}
-
 set.seed(123)
 
 in_train <- createDataPartition(y = data_reg_ind$binary_qc19, p = 0.8, list = FALSE)
@@ -1382,9 +1370,7 @@ nrow(training)
 nrow(testing)
 ```
 
-### Logistic regression
-
-Remember predictions are posterior probabilities:
+### Prediction using the logistic regression
 
 ```{r}
 logit.model = glm(Yes ~ . , data = training, family = binomial)
@@ -1407,7 +1393,7 @@ head(prediction)
 
 ```
 
-LDA model
+## Prediction using the LDA model (doesnt work, data format?)
 
 ```{r}
 # Assume 'my_data' is your dataset with predictors and response variable
@@ -1428,13 +1414,45 @@ head(lda_probability_df)
 
 ```
 
-\
+### Prediction using Benchmark model
 
-Performance: confusion matrix
+```{r}
+bench.model = glm(Yes ~ 1, family=binomial(link='logit'), data=training)
+probability = predict(bench.model, newdata=testing, type="response")
+head(probability)
+
+prediction = as.factor(ifelse(probability > 0.5, "TRUE", "FALSE"))
+levels(prediction) = c("FALSE", "TRUE")
+head(prediction)
+```
+
+The confusion matrix: predictions in rows, true values in columns (but we can change the order)
 
 ```{r}
 confusionMatrix(prediction, testing$Fail)$table
-confusionMatrix(prediction, testing$Fail)$overall[1:2]
 ```
 
-Good behaviour in practice\
+## Using the correct model to predict support (here the logit model- assumed)
+
+To predict the support of LGBTQ minorities, we apply the Bayes' rule of maximum probability:
+
+```{r}
+prediction <- max.col(probability) # 0 means false, 1 means true
+head(prediction)
+```
+
+which is equivalent to
+
+```{r}
+prediction = predict(logit.model, newdata=testing)$binary_qc19
+head(prediction)
+```
+
+Confusion matrix:
+
+```{r, echo=FALSE}
+confusionMatrix(prediction, testing$Yes)$table
+confusionMatrix(prediction, testing$Yes)$overall[1:2]
+```
+
+\
