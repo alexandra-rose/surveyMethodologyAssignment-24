@@ -1215,7 +1215,7 @@ completed_data <- complete(imputed_data)
 # Replace the imputed variables in Data_final_Ind with the completed values
 Data_final_Ind[impute_vars] <- completed_data[impute_vars]
 
-Data_final_Ind
+Data_final_Ind #USE THIS DATA SET WITH IMPUTED VALUES
 ```
 
 We check the distribution of the imputation and we see a generally similar distribution, so we think this imputation is promising!
@@ -1268,17 +1268,17 @@ training <- Data_final_Ind[indices, ]
 ```
 
 ```{r}
-data_reg_ind <- Data_final_Ind |> 
-  select(binary_qc19,male, d11 ,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
+data_reg_ind <- Data_final_Ind |> #changed variable name here
+  select(Yes,male, d11 ,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
 
 
 data_reg_ind = data_reg_ind %>%
-  filter(!is.na(binary_qc19))
+  filter(!is.na(Yes))
 ```
 
 ```{r}
 
-logit_model <- glm(binary_qc19 ~ ., family=binomial(link='logit'), data= data_reg_ind)
+logit_model <- glm(Yes ~ ., family=binomial(link='logit'), data= data_reg_ind)
 
 summary(logit_model)
 ```
@@ -1286,7 +1286,7 @@ summary(logit_model)
 There are several variables that are not significant. We also tried the regression with the categories of variables for age that we had and they were also not significant. We will now proceed to reduce the variables used.
 
 ```{r}
-logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+logit_model2 <- glm(Yes ~ male + d11 + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
 summary(logit_model2)
@@ -1297,7 +1297,7 @@ summary(logit_model2)
 We are going to transform the age variable to include a quadratic term as we suspect the relationship between age and the dependent variable is not linear.
 
 ```{r}
-logit_model3 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+logit_model3 <- glm(Yes ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
 summary(logit_model3)
@@ -1351,8 +1351,6 @@ in_train <- in_train[, 1]
 training <- data_reg_ind[in_train, ]
 testing <- data_reg_ind[-in_train, ]
 ```
-
-//////////////////////////
 
 ```{r}
  
