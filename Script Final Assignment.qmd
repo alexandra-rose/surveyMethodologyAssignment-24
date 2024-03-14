@@ -906,7 +906,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-plot1 <- leaflet(df_plot) %>%
+plot <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -916,7 +916,7 @@ plot1 <- leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-plot1
+plot
 ```
 
 **Association**
@@ -1048,6 +1048,8 @@ df_descriptive <- df_descriptive %>%
               labels = c("Yes", "No", "Refusal (SPONTANEOUS)", "Don't know")))
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, sd1_7_factor), by = "serialid")
+
+
 ```
 
 **d8**
@@ -1074,7 +1076,6 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, d60_ordinal), by = "serialid")
-
 ```
 
 **Sexual minority(sd2_5)**
@@ -1240,16 +1241,16 @@ Making the binary predictive model using the new merged and reduced data set.
 
 ```{r}
 data_reg_ind <- Data_final_Ind |> #changed variable name here
-  select(Yes,male, d11 ,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
+  select(binary_qc19,male, d11 ,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
 
 
 data_reg_ind = data_reg_ind %>%
-  filter(!is.na(Yes))
+  filter(!is.na(binary_qc19))
 ```
 
 ```{r}
 
-logit_model <- glm(Yes ~ ., family=binomial(link='logit'), data= data_reg_ind)
+logit_model <- glm(binary_qc19 ~ ., family=binomial(link='logit'), data= data_reg_ind)
 
 summary(logit_model)
 ```
@@ -1267,7 +1268,7 @@ summary(logit_model2)
 We are going to transform the age variable to include a quadratic term as we suspect the relationship between age and the dependent variable is not linear.
 
 ```{r}
-logit_model3 <- glm(Yes ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
+logit_model3 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
 summary(logit_model3)
@@ -1281,7 +1282,7 @@ exp(coef(logit_model3))
 
 **Male:** The odds of supporting Transgender individuals of being able to change their civil document to match their inner gender are about 25.4% lower for males compared to females, since the odds ratio is 0.74.
 
-**d11:** For each one-year increase in age, the odds of the being supportive of Transgender individuals changing their civil document increase by about 1.9%.
+**d11:** For each one-year increase in age, the odds of the being supportive of Transgender individuals changing their civil document increase by about 1.9%.However, this support is in a decreasing rate as the relationship is non linear suggesting that at some point, increases in age lead to being less in favor of the target variable.
 
 **political_ideology:** Identifying with the political ideology "Right" decreases the odds of the supporting the change in civil documents by transgender individuals to match their inner gender identity by about 22.8%, compared to the baseline category of political ideology.
 
@@ -1338,22 +1339,22 @@ print(vif_values)
 ```
 
 ```{r}
-model <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+glm_model_1 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
                Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
                prop_gndr_bin + prop_lgb_yes + prop_dis_wide + trans_legal_protection +
                Gdp_per_capita_log + Unemployment + (1 | country_name),
                data = Data, family = binomial, 
                control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
-summary(model)
+summary(glm_model_1)
 ```
 
 ```{r}
-model3 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+glm_model_2 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
                Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
                prop_gndr_bin + prop_dis_wide + Unemployment + (1 | country_name),
                data = Data, family = binomial, 
                control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
-summary(model3)
+summary(glm_model_2)
 ```
 
 The model is clearly over fitted. And it suggests we have scaling issue.
@@ -1365,44 +1366,44 @@ Data$Unemployment <- scale(Data$Unemployment, center = TRUE, scale = TRUE)
 ```
 
 ```{r}
-model1 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+glm_model_3 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
                Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
                prop_gndr_bin + prop_lgb_yes + prop_dis_wide + trans_legal_protection +
                Gdp_per_capita_log + Unemployment + (1 | country_name),
                data = Data, family = binomial, 
                control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
-summary(model1)
+summary(glm_model_3)
 ```
 
 Taking out the non-significant variables.
 
 ```{r}
-model4 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+glm_model_4 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
                Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
                prop_gndr_bin + prop_dis_wide + Unemployment + (1 | country_name),
                data = Data, family = binomial, 
                control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
-summary(model4)
+summary(glm_model_4)
 ```
 
 ```{r}
-AIC(model)
-BIC(model)
+AIC(glm_model_1)
+BIC(glm_model_1)
 
-AIC(model1)
-BIC(model1)
+AIC(glm_model_2)
+BIC(glm_model_2)
 
 
-AIC(model3)
-BIC(model3)
+AIC(glm_model_3)
+BIC(glm_model_3)
 
-AIC(model4)
-BIC(model4)
-#model4 seems to show the besT lowest AIC and BIC
+AIC(glm_model_4)
+BIC(glm_model_4)
+#glm_model_4 seems to show the besT lowest AIC and BIC
 ```
 
 ```{r}
-plot(residuals(model4, type = "pearson"))
+plot(residuals(glm_model_4, type = "pearson"))
 ```
 
 There's a large cluster of residuals around zero, which is not unexpected for binary data. We continue with the analysis.
@@ -1411,15 +1412,37 @@ There's a large cluster of residuals around zero, which is not unexpected for bi
 
 ```{r}
 library(lattice)
-qqmath(~ resid(model4, type = "pearson"), distribution = qnorm,
+qqmath(~ resid(glm_model_4, type = "pearson"), distribution = qnorm,
        main = "Q-Q Plot of Pearson Residuals", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
 ```
 
 We do not see any systematic deviations that could indicate model misspecification. The Q-Q plot shows the residuals are not perfectly normally distributed, which is common and expected pattern for a logistic regression.
 
-General Conclusion:
+### General Conclusion 
 
-"WHY DO WE THINKS? THAT THERE ARE Cross-Country Differences in Support Levels: This aspect involves analyzing the data to understand why different countries exhibit varying levels of support for transgender individuals obtaining official documents (cq19 in the questionnare). Individual-level indicators need to be complemented with country-level factors such as cultural norms, legal systems, history, economic-related variables, and societal views on LGBTI rights."
+Based on the results from your multileveled model, we can draw several conclusions regarding cross-country differences in support for transgender individuals obtaining official documents. These are the main variables we could establish that are able to impact the support that transgender individuals have for changing their documents to match their inner gender identity.
+
+**Demographic Variables**
+
+Gender, has a significant negative coefficient indicating that on average, males are less likely to support transgender individuals rights to change their official documents compared to females. The coefficients of age and age squared are significant and negative, suggesting that younger individuals may be more supportive of the target variable but in a decreasing rate.
+
+**Ideology and Religion**
+
+There are categories in Political Ideology that are significant and have a negative impact on our dependent variables. This suggest that having a political_ideology more towards the right tends to decrease the support for our target variable.
+
+Moreover, Religion category levels are also significant in many cases. Indicating that religious affiliation is a factor that affect the support, specially we can observe that non-religious categories tend to be more supportive than more conservative religious categorizes.
+
+**Social Representation**
+
+The variable sd1_7_factor that is related to answering the question on where they have a transgender acquaintances. The individuals who responded with an automatic Refusal tend to be the least supportive individuals towards our dependent variable. Highlighting the need for representation and personal connections in creating a supportive environment for transgender individuals' rights. It also indicates that familiarity with transgender individuals, perhaps through personal acquaintances, correlates with increased understanding and advocacy for the necessity to changes to official documents.
+
+The variable qc_15_1 shows that being in total disagreement on being labeled as part of a sexual minority, related to a extreamlly high non-supportive actite towards believen that transgender individuals should be able to change their civil documents.
+
+**Country Specific Variables**
+
+General support in a country for accepting that there should be a third gender option and agreeing that transgender discrimination is widespread in their own country indicate a really high supportive general attitude towards allowing transgenderer individuals to change their civil documents. Unemployment resulted significant and positive, suggesting that higher unemployment rates within a country might be associated with greater support for transgender rights, which could indicate a variety of social dynamics.
+
+In conclusion, the main reasons for cross-country differences in support levels for transgender individuals obtaining official documents appear to be related to demographic factors (gender and age), political and religious affiliations, social determinants, awareness regarding LGBTI issues, and economic conditions within a country.
 
 ## PREDICTION
 
@@ -1458,7 +1481,6 @@ in_train <- in_train[, 1]
 training <- data_reg_ind[in_train, ]
 testing <- data_reg_ind[-in_train, ]
 ```
-
 
 ### Prediction using the logistic regression
 
