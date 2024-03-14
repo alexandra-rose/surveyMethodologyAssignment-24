@@ -49,7 +49,7 @@ data <- read_dta("Data/ZA7575.dta")
 
 ```
 
-## Cleaning the data
+## DATA CLEANING
 
 Cleaning specific variables to determine which are the more important once for our analysis.
 
@@ -64,7 +64,7 @@ data_cleaning_2 <- data_cleaning_1 %>%
   select(serialid, everything())
 ```
 
-#### Country ID
+**Country ID**
 
 ```{r}
 # creating a variable for country name to be more organized
@@ -166,7 +166,7 @@ Eco_Extra_Data <- read_delim("Eco Extra Data.csv",
 merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRUE)
 ```
 
-## Descriptive Analysis
+## DESCRIPTIVE ANALYSIS
 
 ### First look at association
 
@@ -932,7 +932,7 @@ Descriptive analysis for GDP
 
 Descriptive analysis for Unemployment
 
-## Modeling
+## MODELING
 
 **Dependent Variable (qc19)**
 
@@ -1128,9 +1128,6 @@ Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes),
                              df_country_3 %>% select(-prop_qc19_yes)), 
                         full_join, by = "country_name")
 
-
-Country_level <- left_join(Country_level, binary_qc19_data %>% select(country_name, count_yes,count_no),  by = "country_name")
-
 ```
 
 **adp_general**
@@ -1170,7 +1167,7 @@ DATA FINAL COUNTRY
 
 ```{r}
 Data_final_Cntry <- Country_level |>
-   select(prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection, Gdp_per_capita, Unemployment)
+   select(country_name,prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection, Gdp_per_capita, Unemployment)
 ```
 
 DATA FINAL INDIVIDUAL
@@ -1181,6 +1178,8 @@ Data_final_Ind <- Individual_data |>
   select(serialid,country_name,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
 
 ```
+
+**Imputation**
 
 ```{r}
 # Check for NA values in the data
@@ -1235,37 +1234,9 @@ hist(after_imputation, main = "After Imputation", xlab = "Age Stopped Education"
 
 ```
 
-make the binary predictive model using the new merged and reduced dataset, try all the models to see which is best
+Making the binary predictive model using the new merged and reduced data set.
 
-## Predicting the binary target variable
-
-In order to be able to predict the target variable, we need to define our success that we want to predict. In this case it is support for LGBTQ minorities. We see that the data is balanced in our favor below, there are more Yes' than there are Nos, this is important as it will be easier for us to predict the Yes' than the Nos.
-
-```{r}
-#We want to check if there are more Yes' or more Nos to see whicgh would be better to predict
-Data_final_Ind |> 
-  count(binary_qc19==1) 
-
-## Definition of yes
-Data_final_Ind$Yes = factor(Data_final_Ind$binary_qc19==1) 
-Data_final_Ind$binary_qc19 = NULL
-
-prop.table(table(Data_final_Ind$Yes))
-```
-
-Next we move to split the data into testing and training with a 75% split.
-
-```{r}
-set.seed(123)
-
-in_train <- createDataPartition(Data_final_Ind$Yes, p = 0.75, list = FALSE)  # 75% for training
-
-# Extracting the indices from the first column of in_train
-indices <- in_train[, 1]
-
-# Subsetting the data frame using the extracted indices
-training <- Data_final_Ind[indices, ]
-```
+### Regression Analysis Individual Level
 
 ```{r}
 data_reg_ind <- Data_final_Ind |> 
@@ -1290,7 +1261,6 @@ logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology +             
                     family = binomial(link = "logit"), data = data_reg_ind)
 
 summary(logit_model2)
-
 
 ```
 
@@ -1323,26 +1293,55 @@ exp(coef(logit_model3))
 
 **qc15_1_ordinal:** Tending to agree that Gay, lesbian and bisexual people should have the same rights as heterosexual people, decreases the odds by about 61.5%, while "Totally disagree" decreases the odds by about 92.9%.
 
-### Regression for Individual and Country Level Analysis.
+**Conclusion in the Individual Level**
 
-## Prediction by Individual Level
+In our analysis at the individual level, we observe that there are distinct factors influencing support for transgender individual's ability to change their civil documents to match their inner gender identity. The variations in support across the different demographics and beliefs in our data highlight the reality and complexity of public opinion on this issue.
 
-We want to create a model that is able to predict the support for transgender individuals changing civil documents.
+Gender and Age play significant roles in this matter. For the case of Gender, females appear to show higher odds of support compared to males. This could be related to the potential influence of the traditional gender roles and perceptions we have on our society. Moreover, the Age variables show that there is a slight increase in support for our dependent variable for each additional year of age. This might suggests that life experiences or generational shifts could gradually influence views towards more inclusive attitudes, however, age influence is minimal in comparison to the other variables represented in our regression.
+
+The categorical variable Political Ideology significantly impacts attitudes of support for our target variable. The finding displayed suggest that an alignment towards more conservative view, results in being less supportive to allow changes in the civil document for transgender individuals. It showed a 22.8% decrease of support for our target variables if the individual identified himself as conservative. Additionally, Religious affiliation further complicates the picture, as identifying as Catholic decrease the support for transgender by about 21,2%. In contrast, individuals identifying with the Jewish faith are slightly more supportive, thus, we need to take into consideration that in our data set the proportion of individuals identified as Jewish is really small in comparison to the Catholic faith individuals.
+
+Concentrating now on the economic aspect, individuals who established that they have not had difficulties in paying the bill, are slightly more supportive of our dependent variables. Indicating that economic factors may intersect with views on rights and equality.
+
+For more of a social perception, individuals who responded that they lack connections with transgender individuals show a decreasing support for our dependent variable by 45.5%. The findings underscore the crucial importance of representation and visibility for the transgender community, as well as the development of personal relationships that foster understanding and empathy. These will most likely will increase the support for allowing transgender individuals to change their civil documents to match their inner gender identity.
+
+In conclusion, support for our dependent variables is influenced by several complex factors that interplay and shape individuals attitudes. Gender, age, political ideology, and religious affiliation are pivotal in transforming individual' s attitudes.More importantly, we want to point out that the significant impact of lacking personal connections with transgender individuals highlight the need for increased interpersonal connections and broader visibility of transgender issues. Paving the way for greater acceptance and legislative support in the progress of changing their legal documents, and thus, shifting societal norms and attitudes.
+
+### **Multilevel analysis// THIS IS MISSING**
+
+### General Conclusion:
+
+"WHY DO WE THINKS? THAT THERE ARE Cross-Country Differences in Support Levels: This aspect involves analyzing the data to understand why different countries exhibit varying levels of support for transgender individuals obtaining official documents (cq19 in the questionnare). Individual-level indicators need to be complemented with country-level factors such as cultural norms, legal systems, history, economic-related variables, and societal views on LGBTI rights."
+
+## PREDICTION
+
+### Prediction by Individual Level
+
+We want to create a model that is able to predict the support for transgender individuals changing civil documents. In order to be able to predict our target variable, we need to define the success that we want to predict.
 
 ### Definition of support
 
 ```{r}
+
 prop_table_yes_no <- prop.table(table(factor(data_reg_ind$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))))
 
 prop_table_yes_no
 ```
 
-We need to find the factors that are causing this 60% of support for our dependent variable..
+We see that the data is balanced in our favor below, there are more Yes than there are No's, this is important as it will be easier for us to predict the Yes than the No's. We need to find the factors that are causing this 60% of support for our dependent variable.
+
+The model we are going to use.
+
+```{r}
+ModelS = binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal
+```
 
 ### Data splitting
 
 ```{r}
 set.seed(123)
+
+#we move to split the data into testing and training with a 80% split.
 
 in_train <- createDataPartition(y = data_reg_ind$binary_qc19, p = 0.8, list = FALSE)
 
@@ -1352,28 +1351,12 @@ training <- data_reg_ind[in_train, ]
 testing <- data_reg_ind[-in_train, ]
 ```
 
-//////////////////////////
-
-```{r}
- 
-# Check for NA values in the data
-na_summary <- colSums(is.na(complete_data))
- 
-# Print columns with NA values
-cols_with_na_names <- names(na_summary[na_summary > 0])
-cols_with_na <- na_summary[na_summary > 0]
-print(cols_with_na)
-
-
-testing <- Data_final_Ind[-indices,]
-nrow(training)
-nrow(testing)
-```
+/////
 
 ### Prediction using the logistic regression
 
 ```{r}
-logit.model = glm(Yes ~ . , data = training, family = binomial)
+logit.model = glm(ModelS , data = training, family = binomial)
 
 ctrl <- trainControl(method = "cv") # 10-fold cross-validation number = 10) 
 significant_vars <- c()
@@ -1381,15 +1364,14 @@ significant_vars <- c()
 #remove rows with NAs
 training <- na.omit(training)
 
-summary(logit.model)
-
+s
+ummary(logit.model)
 #use the testing data to predict the target variable
 probability <- predict(logit.model, newdata=testing, type='response')
 head(probability)
 
 prediction <- as.factor(ifelse(probability > 0.5, TRUE, FALSE))
 head(prediction)
-
 
 ```
 
