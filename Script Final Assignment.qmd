@@ -928,9 +928,44 @@ chisq.test(table)
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
 
-### Descriptive analysis for GDP
+### Descriptive analysis for country level economic variables (GDP per capita and unemployment)
 
-### Descriptive analysis for Unemployment
+```{r}
+df_descriptive <- df_descriptive  |> 
+  rename("unemp" = `Unemployment. total (% of total labor force) (modeled ILO estimate)`) |> 
+  rename("GDPpc" = `GDP per capita (current US$)`)
+
+# Perform descriptive analysis for Unemployment and GDP per capita
+summary(df_descriptive$unemp)
+summary(df_descriptive$GDPpc)
+
+# Create histograms for visualizing the distribution of Unemployment and GDP per capita
+ggplot(df_descriptive, aes(x = unemp)) +
+  geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
+  labs(title = "Distribution of Unemployment", x = "Unemployment Rate")
+
+ggplot(df_descriptive, aes(x = GDPpc)) +
+  geom_histogram(binwidth = 1000, fill = "lightgreen", color = "black") +
+  labs(title = "Distribution of GDP per Capita", x = "GDP per Capita")
+
+# Cross-tabulate the non-numeric variables with the target variable
+cross_table <- table(df_descriptive$qc19_multinominal, df_descriptive$unemp)
+print(cross_table)
+
+# Perform chi-square test
+chi_square_test <- chisq.test(cross_table)
+print(chi_square_test)
+
+# Cross-tabulate the non-numeric variables with the target variable
+cross_table1 <- table(df_descriptive$qc19_multinominal, df_descriptive$GDPpc)
+print(cross_table1)
+
+# Perform chi-square test
+chi_square_test1 <- chisq.test(cross_table1)
+print(chi_square_test1)
+```
+
+Chi squared statistic is a measure of the strength of the relationhsip, for variables both we have very high numbers and both tests are statistically significant. Thus we can reje
 
 ### MODELING
 
