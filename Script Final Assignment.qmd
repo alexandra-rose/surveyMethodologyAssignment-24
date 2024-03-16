@@ -757,13 +757,13 @@ summary(anova)
 ```
 
 ```{r}
-df_cor_age <- 
-  df_descriptive |> 
-  select(qc19, d8) |> 
-  filter(qc19_multinominal < 3) |> # filtering out everything besides 1 and 2
-  mutate(qc19 = ifelse(qc19 == 2, 0, NA)) # Assigning 2 the number 0 for logical interpretation
+df_cor_age <- df_descriptive %>%
+  select(qc19, d8) %>%
+  filter(qc19 %in% c(1, 2)) %>%  
+  mutate(qc19 = as.numeric(qc19 == 1)) 
 
-cor(df_cor_age$d8, df_cor_age$qc19)
+cor(df_cor_age$d8, df_cor_age$qc19, use = "complete.obs")
+
 ```
 
 The correlation shows there is a very weak association in favor of the literature's case that being more educated is associated with an increased support of transgender rights.
@@ -1725,7 +1725,6 @@ partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
 ### Neural Networks
 
 ```{r}
-
 nn_tune <- train(ModelS, 
                  data = training,
                  method = "nnet",  
