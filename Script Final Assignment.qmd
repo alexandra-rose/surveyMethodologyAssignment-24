@@ -931,41 +931,41 @@ With this results we can conclude that there is a statistically significant rela
 ### Descriptive analysis for country level economic variables (GDP per capita and unemployment)
 
 ```{r}
-df_descriptive <- df_descriptive  |> 
+data_desc <- df_descriptive  |> 
+  select(country_name, qc19_multinominal,`Unemployment. total (% of total labor force) (modeled ILO estimate)`,`GDP per capita (current US$)`)
+  
+data_desc <- data_desc  |> 
   rename("unemp" = `Unemployment. total (% of total labor force) (modeled ILO estimate)`) |> 
   rename("GDPpc" = `GDP per capita (current US$)`)
 
-# Perform descriptive analysis for Unemployment and GDP per capita
-summary(df_descriptive$unemp)
-summary(df_descriptive$GDPpc)
 
-# Create histograms for visualizing the distribution of Unemployment and GDP per capita
-ggplot(df_descriptive, aes(x = unemp)) +
-  geom_histogram(binwidth = 1, fill = "skyblue", color = "black") +
-  labs(title = "Distribution of Unemployment", x = "Unemployment Rate")
+# Bar plot for visualizing the unemployment rate for each country
+ggplot(data_desc, aes(x = reorder(country_name, unemp), y = unemp)) +
+  geom_bar(stat = "identity", fill = "grey", color = "#8073ac") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(family= "sans",angle = 90, hjust = 1, vjust = 0.5)) +
+  labs(title = "Unemployment Rate by Country", x = "Country", y = "Unemployment Rate (%)")
 
-ggplot(df_descriptive, aes(x = GDPpc)) +
-  geom_histogram(binwidth = 1000, fill = "lightgreen", color = "black") +
-  labs(title = "Distribution of GDP per Capita", x = "GDP per Capita")
+# Bar plot for visualizing the GDP per capita for each country
+ggplot(data_desc, aes(x = reorder(country_name, GDPpc), y = log(GDPpc))) + 
+  geom_bar(stat = "identity", fill = "grey", color = "#fc4e2a") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(family= "sans", angle = 90, hjust = 1, vjust = 0.5)) +
+  labs(title = "GDP per Capita by Country", x = "Country", y = "Logs of GDP per Capita (US$)")
 
-# Cross-tabulate the non-numeric variables with the target variable
-cross_table <- table(df_descriptive$qc19_multinominal, df_descriptive$unemp)
-print(cross_table)
-
-# Perform chi-square test
-chi_square_test <- chisq.test(cross_table)
-print(chi_square_test)
-
-# Cross-tabulate the non-numeric variables with the target variable
-cross_table1 <- table(df_descriptive$qc19_multinominal, df_descriptive$GDPpc)
-print(cross_table1)
-
-# Perform chi-square test
-chi_square_test1 <- chisq.test(cross_table1)
-print(chi_square_test1)
 ```
 
-Chi squared statistic is a measure of the strength of the relationhsip, for variables both we have very high numbers and both tests are statistically significant. Thus we can reje
+```{r}
+#For Unemployment
+kruskal_unemp <- kruskal.test(unemp ~ qc19_multinominal, data = data_desc)
+print(kruskal_unemp)
+
+# For GDP per Capita
+kruskal_gdppc <- kruskal.test(GDPpc ~ qc19_multinominal, data = data_desc)
+print(kruskal_gdppc)
+```
+
+In both cases, the p-values are less than the significance level of 0.05, we reject the null hypothesis of the Kruskal-Wallis test, which states that the group medians are equal. This results imply that the group medians are not all equal, and there is evidence of a difference among the groups defined by the our dependent variable.
 
 ### MODELING
 
@@ -1720,7 +1720,7 @@ partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
 ### Neural Networks
 
 ```{r}
-ctrl$verboseIter=F
+ctrl$verboseIter=FALSE
 
 nn_tune <- train(ModelS, 
                  data = training,
