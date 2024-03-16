@@ -138,7 +138,7 @@ Looking into the extra data set
 Data_Extra_by_Country$country_name <- factor(Data_Extra_by_Country$country_name)
 ```
 
-The variable chosen is the the following:
+The variables chosen are the following:
 
 ```{r}
 Data_Extra_by_Country <- Data_Extra_by_Country %>% 
@@ -927,6 +927,7 @@ chisq.test(table)
 ```
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
+
 
 ### Descriptive analysis for country level economic variables (GDP per capita and unemployment)
 
