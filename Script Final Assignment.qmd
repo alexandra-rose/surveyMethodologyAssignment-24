@@ -40,6 +40,7 @@ library(car)
 library(caret)
 library(rpart)
 library(rpart.plot)
+library(lme4)
 ```
 
 ### Data
@@ -759,8 +760,8 @@ summary(anova)
 df_cor_age <- 
   df_descriptive |> 
   select(qc19, d8) |> 
-  filter(qc19 < 3) |> # filtering out everything besides 1 and 2
-  mutate(qc19 = ifelse(qc19 == 2, 0, qc19)) # Assigning 2 the number 0 for logical interpretation
+  filter(qc19_multinominal < 3) |> # filtering out everything besides 1 and 2
+  mutate(qc19 = ifelse(qc19 == 2, 0, NA)) # Assigning 2 the number 0 for logical interpretation
 
 cor(df_cor_age$d8, df_cor_age$qc19)
 ```
@@ -927,7 +928,6 @@ chisq.test(table)
 ```
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
-
 
 ### Descriptive analysis for country level economic variables (GDP per capita and unemployment)
 
@@ -1314,7 +1314,6 @@ Data <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
 #taking logs of GDP per capita
 Data$Gdp_per_capita_log <- log(Data$Gdp_per_capita)
 
-library(lme4)
 ```
 
 First we check for multicolineality in the fixed effect variable
@@ -1355,8 +1354,9 @@ The model is clearly over fitted. And it suggests we have scaling issue.
 
 ```{r}
 Data$d11 <- scale(Data$d11, center = TRUE, scale = TRUE)
-Data$Gdp_per_capita_log <- scale(Data$Gdp_per_capita_log, center = TRUE, scale = TRUE) 
+Data$Gdp_per_capita_log <- scale(Data$Gdp_per_capita_log, center = TRUE, scale = TRUE)
 Data$Unemployment <- scale(Data$Unemployment, center = TRUE, scale = TRUE) 
+
 ```
 
 ```{r}
@@ -1682,7 +1682,11 @@ The model shows a slight improvement in both Accuracy, Specificity and Sensitivi
 ### Gradient boosting
 
 ```{r}
-ctrl$verboseIter=F
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 5,
+                     classProbs = T,
+                     summaryFunction=twoClassSummary,
+                     verboseIter = F)
 
 gbmFit <- train(ModelS, 
                   data = training,
@@ -1721,7 +1725,6 @@ partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
 ### Neural Networks
 
 ```{r}
-ctrl$verboseIter=FALSE
 
 nn_tune <- train(ModelS, 
                  data = training,
@@ -1748,3 +1751,7 @@ library(pROC)
 rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
 plot(rocObj, print.auc = TRUE)
 ```
+
+### Final Predictive model
+
+The predictive model for other countries chosen is the
