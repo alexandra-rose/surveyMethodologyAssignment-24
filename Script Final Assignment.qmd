@@ -1,6 +1,6 @@
 ---
 title: "Final Assignment"
-author: Alex Salo  Frederick Peña Sofia Villamil
+author: Frederick Peña, Alexandra Salo and Sofia Villamil
 format: html
 editor: visual
 editor_options: 
@@ -14,8 +14,7 @@ editor_options:
 ```{r}
 rm(list = ls())
 
-getwd()
-#setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
+setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
 ```{r}
@@ -38,8 +37,9 @@ library(MASS)
 library(caret)
 library(plotly)
 library(car)
-
-
+library(caret)
+library(rpart)
+library(rpart.plot)
 ```
 
 ### Data
@@ -869,9 +869,9 @@ cor(df_country_3$prop_lgb_yes, df_country_3$prop_qc19_yes, method = "spearman")
 
 -   this only captures the support direction. As outlined above, a similar strength may be expected for the revers association.
 
-### Legal protections for the transgender community in 2019 by country level
+### Legal protections for the transgender community by country level
 
-To observe if there is are general legal protections across various countries within our dataset, an interactive map was developed.
+To observe if there is are general legal protections across various countries within our data set, an interactive map was developed.
 
 ```{r}
 df <- df_descriptive %>% 
@@ -906,7 +906,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-plot <- leaflet(df_plot) %>%
+plot1 <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -916,7 +916,7 @@ plot <- leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-plot
+plot1
 ```
 
 **Association**
@@ -928,25 +928,23 @@ chisq.test(table)
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
 
-Descriptive analysis for GDP
+### Descriptive analysis for GDP
 
-Descriptive analysis for Unemployment
+### Descriptive analysis for Unemployment
 
-## MODELING
+### MODELING
 
 **Dependent Variable (qc19)**
 
 It relates to this question:
 
-*Do you think that tran*sgender persons should be able to change their civil documents to match their inner gender identity?
+*Do you think that transgender persons should be able to change their civil documents to match their inner gender identity?*
 
-It takes the values:
+We will take the values:
 
 -   1 for "Yes"
 
 -   2 for "No"
-
-We will take the variable as Binary in the individual level
 
 ```{r}
 df_descriptive <- df_descriptive %>%
@@ -969,6 +967,9 @@ df_descriptive <- df_descriptive %>%
   )
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, male), by = "serialid")
+
+Individual_data$male <- as.numeric(as.character(Individual_data$male))
+
 ```
 
 **Age**
@@ -992,11 +993,13 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, d11), by = "serialid")
+
+Individual_data$d11 <- as.numeric(as.character(Individual_data$d11))
 ```
 
 **Political_ideology**
 
-In political matters people talk of "the left" and "the right". How would you place your views on this scale?
+*In political matters people talk of "the left" and "the right". How would you place your views on this scale?*
 
 ```{r}
 
@@ -1010,11 +1013,13 @@ df_descriptive <- df_descriptive %>%
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, political_ideology), by = "serialid")
 
+
+
 ```
 
 **Religion_cat**
 
-Religion - Do you consider yourself to be…?
+*Do you consider yourself to be…?*
 
 ```{r}
 
@@ -1034,11 +1039,13 @@ df_descriptive <- df_descriptive %>%
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, Religion_cat), by = "serialid")
 
+Individual_data$Religion_cat <- factor(Individual_data$Religion_cat)
+
 ```
 
 **sd1_7**
 
-Do you have friends or acquaintances who are transgender?
+*Do you have friends or acquaintances who are transgender?*
 
 ```{r}
 
@@ -1049,12 +1056,11 @@ df_descriptive <- df_descriptive %>%
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, sd1_7_factor), by = "serialid")
 
-
 ```
 
 **d8**
 
-How old were you when you stopped full‐time education?
+*How old were you when you stopped full‐time education?*
 
 ```{r}
 
@@ -1070,25 +1076,30 @@ df_descriptive <- df_descriptive %>%
 
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, age_stopped_education), by = "serialid")
+
 ```
 
-**d60_ordinal** During the last twelve months, would you say you had difficulties to pay your bills at the end of the month…?
+**d60_ordinal**
+
+*During the last twelve months, would you say you had difficulties to pay your bills at the end of the month…?*
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, d60_ordinal), by = "serialid")
+
 ```
 
 **Sexual minority(sd2_5)**
 
-Where you live, do you consider yourself to be part of a sexual minority?
+*Where you live, do you consider yourself to be part of a sexual minority?*
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, sd2_5), by = "serialid")
+
 ```
 
 **d25**
 
-Would you say you live in a...?
+*Would you say you live in a...?*
 
 ```{r}
 df_descriptive <- df_descriptive %>%
@@ -1115,6 +1126,7 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc1_8_ordinal), by = "serialid")
+
 ```
 
 COUNTRY LEVEL
@@ -1128,6 +1140,11 @@ Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes),
                              df_country_2 %>% select(-prop_qc19_yes), 
                              df_country_3 %>% select(-prop_qc19_yes)), 
                         full_join, by = "country_name")
+
+
+Country_level$prop_gndr_bin <- Country_level$prop_gndr_bin / 100
+Country_level$prop_lgb_yes <- Country_level$prop_lgb_yes / 100
+Country_level$prop_dis_wide <- Country_level$prop_dis_wide / 100
 
 ```
 
@@ -1180,67 +1197,10 @@ Data_final_Ind <- Individual_data |>
 
 ```
 
-**Imputation**
-
-```{r}
-# Check for NA values in the data
-na_summary <- colSums(is.na(Data_final_Ind))
- 
-# Print columns with NA values
-cols_with_na_names <- names(na_summary[na_summary > 0])
-cols_with_na <- na_summary[na_summary > 0]
-print(cols_with_na)
-
-```
-
-We deemed that it is unwise to impute data in the target variable, and that in the other cases imputation might cause more harm than benefit. However we considered that for the age_stopped_education variable it could be valuable to impute the data and since it is a numerical variable it may be more accurate.
-
-```{r}
-library(mice)
-library(missForest)
-
-# Specify the variables for imputation
-impute_vars <- c("age_stopped_education", "d11", "political_ideology") # Add other variables as needed
-
-# Create a copy of the original dataset with only the specified variables
-impute_data <- Data_final_Ind[, impute_vars]
-
-# Perform multiple imputation using polyreg method
-num_imputations <- 5  # Adjust as needed
-imputed_data <- mice(impute_data, method = "pmm", m = num_imputations)
-
-# Combine the imputed datasets into a single dataset
-completed_data <- complete(imputed_data)
-
-# Replace the imputed variables in Data_final_Ind with the completed values
-Data_final_Ind[impute_vars] <- completed_data[impute_vars]
-
-Data_final_Ind #USE THIS DATA SET WITH IMPUTED VALUES
-```
-
-We check the distribution of the imputation and we see a generally similar distribution, so we think this imputation is promising!
-
-```{r}
-# Before imputation
-before_imputation <- Data_final_Ind$age_stopped_education
-
-# After imputation
-after_imputation <- completed_data$age_stopped_education
-
-# Create histograms for visual comparison
-par(mfrow = c(1, 2))  # Set up a 1x2 plotting layout
-
-hist(before_imputation, main = "Before Imputation", xlab = "Age Stopped Education", col = "skyblue")
-hist(after_imputation, main = "After Imputation", xlab = "Age Stopped Education", col = "lightgreen")
-
-```
-
-Making the binary predictive model using the new merged and reduced data set.
-
 ### Regression Analysis Individual Level
 
 ```{r}
-data_reg_ind <- Data_final_Ind |> #changed variable name here
+data_reg_ind <- Data_final_Ind |> 
   select(binary_qc19,male, d11 ,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
 
 
@@ -1308,17 +1268,13 @@ For more of a social perception, individuals who responded that they lack connec
 
 In conclusion, support for our dependent variables is influenced by several complex factors that interplay and shape individuals attitudes. Gender, age, political ideology, and religious affiliation are pivotal in transforming individual' s attitudes.More importantly, we want to point out that the significant impact of lacking personal connections with transgender individuals highlight the need for increased interpersonal connections and broader visibility of transgender issues. Paving the way for greater acceptance and legislative support in the progress of changing their legal documents, and thus, shifting societal norms and attitudes.
 
-### **Multi-level analysis**
+### Multi-level analysis
 
 In order to do a multi-leveled analysis we are going to take generalized linear mixed-effects model (GLMM). Where country_name will be the variable used as the random effects.
 
 ```{r}
 Data <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
 
-#proportion variables to be between 0 and 1
-Data$prop_gndr_bin <- Data$prop_gndr_bin / 100
-Data$prop_lgb_yes <- Data$prop_lgb_yes / 100
-Data$prop_dis_wide <- Data$prop_dis_wide / 100
 #taking logs of GDP per capita
 Data$Gdp_per_capita_log <- log(Data$Gdp_per_capita)
 
@@ -1328,7 +1284,7 @@ library(lme4)
 First we check for multicolineality in the fixed effect variable
 
 ```{r}
-test_model <- glm(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
+test_model <- glm(binary_qc19 ~ male + d11 + political_ideology +
                     Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
                     prop_gndr_bin + prop_lgb_yes + trans_legal_protection +
                     Gdp_per_capita_log + Unemployment,
@@ -1337,6 +1293,8 @@ test_model <- glm(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
 vif_values <- vif(test_model)
 print(vif_values)
 ```
+
+All variables are below 10, meaning that there is no evidence of multicolineality.
 
 ```{r}
 glm_model_1 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
@@ -1418,7 +1376,7 @@ qqmath(~ resid(glm_model_4, type = "pearson"), distribution = qnorm,
 
 We do not see any systematic deviations that could indicate model misspecification. The Q-Q plot shows the residuals are not perfectly normally distributed, which is common and expected pattern for a logistic regression.
 
-### General Conclusion 
+### General Conclusion
 
 Based on the results from your multileveled model, we can draw several conclusions regarding cross-country differences in support for transgender individuals obtaining official documents. These are the main variables we could establish that are able to impact the support that transgender individuals have for changing their documents to match their inner gender identity.
 
@@ -1436,35 +1394,42 @@ Moreover, Religion category levels are also significant in many cases. Indicatin
 
 The variable sd1_7_factor that is related to answering the question on where they have a transgender acquaintances. The individuals who responded with an automatic Refusal tend to be the least supportive individuals towards our dependent variable. Highlighting the need for representation and personal connections in creating a supportive environment for transgender individuals' rights. It also indicates that familiarity with transgender individuals, perhaps through personal acquaintances, correlates with increased understanding and advocacy for the necessity to changes to official documents.
 
-The variable qc_15_1 shows that being in total disagreement on being labeled as part of a sexual minority, related to a extreamlly high non-supportive actite towards believen that transgender individuals should be able to change their civil documents.
+The variable qc_15_1 shows that being in total disagreement that Gay, lesbian and bisexual people should have the same rights as heterosexual people, related to a extremely high non-supportive actitud towards agreeing that transgender individuals should be able to change their civil documents.
 
 **Country Specific Variables**
 
-General support in a country for accepting that there should be a third gender option and agreeing that transgender discrimination is widespread in their own country indicate a really high supportive general attitude towards allowing transgenderer individuals to change their civil documents. Unemployment resulted significant and positive, suggesting that higher unemployment rates within a country might be associated with greater support for transgender rights, which could indicate a variety of social dynamics.
+General support in a country for accepting that there should be a third gender option and agreeing that transgender discrimination is widespread in their own country indicate a really high supportive general attitude towards allowing transgender individuals to change their civil documents. Unemployment resulted significant and positive, suggesting that higher unemployment rates within a country might be associated with greater support for transgender rights, which could indicate a variety of social dynamics.
 
 In conclusion, the main reasons for cross-country differences in support levels for transgender individuals obtaining official documents appear to be related to demographic factors (gender and age), political and religious affiliations, social determinants, awareness regarding LGBTI issues, and economic conditions within a country.
 
 ## PREDICTION
-
-### Prediction by Individual Level
 
 We want to create a model that is able to predict the support for transgender individuals changing civil documents. In order to be able to predict our target variable, we need to define the success that we want to predict.
 
 ### Definition of support
 
 ```{r}
-
-prop_table_yes_no <- prop.table(table(factor(data_reg_ind$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))))
+prop_table_yes_no <- prop.table(table(factor(Data_final_Ind$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))))
 
 prop_table_yes_no
 ```
 
 We see that the data is balanced in our favor below, there are more Yes than there are No's, this is important as it will be easier for us to predict the Yes than the No's. We need to find the factors that are causing this 60% of support for our dependent variable.
 
-The model we are going to use.
+The model we are going to use and the data.
 
 ```{r}
-ModelS = binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal
+ModelS = binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology + Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal + Unemployment + prop_gndr_bin + prop_dis_wide
+
+
+data_pred <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
+
+
+data_pred = data_pred %>%
+  filter(!is.na(binary_qc19))
+
+data_pred$prop_gndr_bin <- data_pred$prop_gndr_bin / 100
+data_pred$prop_dis_wide <- data_pred$prop_dis_wide / 100
 ```
 
 ### Data splitting
@@ -1474,96 +1439,276 @@ set.seed(123)
 
 #we move to split the data into testing and training with a 80% split.
 
-in_train <- createDataPartition(y = data_reg_ind$binary_qc19, p = 0.8, list = FALSE)
+in_train <- createDataPartition(y = data_pred$binary_qc19, p = 0.8, list = FALSE)
 
 in_train <- in_train[, 1]
 
-training <- data_reg_ind[in_train, ]
-testing <- data_reg_ind[-in_train, ]
+training <- data_pred[in_train, ]
+testing <- data_pred[-in_train, ]
+
+
+
+#remove rows with NA's
+training <- na.omit(training)
+testing <- na.omit(testing)
+
 ```
 
-### Prediction using the logistic regression
+### Predicting using the logistic regression
 
 ```{r}
 logit.model = glm(ModelS , data = training, family = binomial)
 
+summary(logit.model)
+```
+
+```{r}
 ctrl <- trainControl(method = "cv") # 10-fold cross-validation number = 10) 
 significant_vars <- c()
 
-#remove rows with NAs
-training <- na.omit(training)
 
-s
-ummary(logit.model)
 #use the testing data to predict the target variable
 probability <- predict(logit.model, newdata=testing, type='response')
 head(probability)
 
 prediction <- as.factor(ifelse(probability > 0.5, TRUE, FALSE))
 head(prediction)
-
 ```
 
-## Prediction using the LDA model (doesnt work, data format?)
+With the output generated we can establish that the model predicts that in observation 6, there's a 78.25% probability that the outcome is TRUE for this observation. Which is a high probability and thus, indicating that there is a strong confidence in the outcome being TRUE. While probabilities significantly below 50% indicate a FALSE outcomes like observation 8. However, further analysis is needed using Machine Learning Methodology to find the best suttee predictive model for our data.
+
+### Predicting with Machine Learning
 
 ```{r}
-# Assume 'my_data' is your dataset with predictors and response variable
-# Create the LDA model
-lda_. model <- lda(Yes ~ ., data = training)
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 10,
+                     classProbs = T,
+                     summaryFunction=twoClassSummary,
+                     verboseIter = T)
 
-# Summary of the LDA model
-summary(lda_model)
+# defining the levels of our dependent variable
+training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
 
-# Make predictions using the LDA model
-lda_probability <- predict(lda_model, newdata = testing)$posterior
-
-# Convert the probabilities into a data frame
-lda_probability_df <- as.data.frame(lda_probability)
-
-# Display the head of the probabilities
-head(lda_probability_df)
+testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
 
 ```
-
-### Prediction using Benchmark model
 
 ```{r}
-bench.model = glm(Yes ~ 1, family=binomial(link='logit'), data=training)
-probability = predict(bench.model, newdata=testing, type="response")
-head(probability)
+# we first need to correct the factor levels to be able to run the predictive model
 
-prediction = as.factor(ifelse(probability > 0.5, "TRUE", "FALSE"))
-levels(prediction) = c("FALSE", "TRUE")
-head(prediction)
+# For political_ideology
+levels(training$political_ideology) <- make.names(levels(training$political_ideology), unique = TRUE)
+levels(testing$political_ideology) <- make.names(levels(testing$political_ideology), unique = TRUE)
+# For Religion_cat
+levels(training$Religion_cat) <- make.names(levels(training$Religion_cat), unique = TRUE)
+levels(testing$Religion_cat) <- make.names(levels(testing$Religion_cat), unique = TRUE)
+# For sd1_7_factor
+levels(training$sd1_7_factor) <- make.names(levels(training$sd1_7_factor), unique = TRUE)
+levels(testing$sd1_7_factor) <- make.names(levels(testing$sd1_7_factor), unique = TRUE)
+# For qc15_1_ordinal
+levels(training$qc15_1_ordinal) <- make.names(levels(training$qc15_1_ordinal), unique = TRUE)
+levels(testing$qc15_1_ordinal) <- make.names(levels(testing$qc15_1_ordinal), unique = TRUE)
+# For d60_ordinal
+levels(training$d60_ordinal) <- make.names(levels(training$d60_ordinal), unique = TRUE)
+levels(testing$d60_ordinal) <- make.names(levels(testing$d60_ordinal), unique = TRUE)
+
+
 ```
 
-The confusion matrix: predictions in rows, true values in columns (but we can change the order)
+### Knn
 
 ```{r}
-confusionMatrix(prediction, testing$Fail)$table
+knnFit <- train(ModelS, 
+                  data = training,
+                  method = "kknn",   
+                  preProc=c('scale','center'),
+                  tuneLength = 10, 
+                  metric="ROC",
+                  trControl = ctrl)
 ```
-
-## Using the correct model to predict support (here the logit model- assumed)
-
-To predict the support of LGBTQ minorities, we apply the Bayes' rule of maximum probability:
 
 ```{r}
-prediction <- max.col(probability) # 0 means false, 1 means true
-head(prediction)
+plot(knnFit)
 ```
 
-which is equivalent to
+Looking at the plot, we can observe that there is a peak performance at around 10 neighbors and onward. This is where the ROC AUC score is the highest amount the tested values, suggesting that the optimal number of neighbors for our data set, based on the cross validation process is around those values. However, it's worth noting that while higher k values may give a slightly higher AUC, they also make the model more computationally expensive and potentially less sensitive to local variations in the data.
 
 ```{r}
-prediction = predict(logit.model, newdata=testing)$binary_qc19
-head(prediction)
+knnProb = predict(knnFit, testing, type = "prob")
+prediction <- as.factor(ifelse(knnProb[,"Yes"] > 0.5, "Yes", "No"))
+confusionMatrix(prediction, testing$binary_qc19)
+
 ```
 
-Confusion matrix:
+The model has an accuracy of 73.81%, suggesting that a relatively high proportion of predictions are correct. The sensitivity of 61% indicates that the model has moderate effectiveness in identifying positive cases, while the specificity of 82.01% shows a stronger performance in predicting negative cases. This may suggest a tendency towards predicting negative outcomes more accurately, which could be reflective of class distribution biases within the data set. Further analysis using other models is necessary to improve the balance and overall predictive performance.
 
-```{r, echo=FALSE}
-confusionMatrix(prediction, testing$Yes)$table
-confusionMatrix(prediction, testing$Yes)$overall[1:2]
+### Decision trees
+
+```{r}
+# Hyper-parameters
+control = rpart.control(minsplit = 20, maxdepth = 10, cp=0.01)
 ```
 
-\
+A decision tree:
+
+```{r}
+dtFit <- rpart(ModelS, data=training, method = "class", control = control)
+summary(dtFit)
+```
+
+Visualize decision trees:
+
+```{r}
+rpart.plot(dtFit, digits=4)
+```
+
+**Each node shows:**
+
+-   the predicted class
+-   the predicted probability of each class
+-   the percentage of observations in the node
+
+**Interpretation of one path:** For individuals who tend to agree or totally agree with qc15_1_ordinal, and who have a prop_gndr_bin value higher than 0.002947, if they also identify their Religion_cat as Muslim or Orthodox Christian, the decision tree classifies them as 'Yes'. This particular path leads to a leaf where 56.40% of the observations within this branch result in a 'Yes' prediction.
+
+**Prediction**
+
+```{r}
+dtPred <- predict(dtFit, testing, type = "class")
+
+dtProb <- predict(dtFit, testing, type = "prob")
+
+prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.5, "Yes", "No"))
+
+confusionMatrix(prediction, testing$binary_qc19)
+```
+
+We can observe an improvement in the model's accuracy, now at 75%. There's also a notable increase in sensitivity, which is currently at 63.29%, suggesting better detection of positive cases. Specificity remains nearly unchanged and is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
+
+### Using Caret
+
+```{r}
+caret.fit <- train(ModelS, 
+                   data = training, 
+                   method = "rpart",
+                   control=rpart.control(minsplit = 8, maxdepth = 12),
+                   trControl = ctrl,
+                   tuneLength=10)
+caret.fit
+```
+
+**Visualization**
+
+```{r}
+rpart.plot(caret.fit$finalModel)
+```
+
+Prediction
+
+```{r}
+dtProb <- predict(caret.fit, testing, type = "prob")
+
+prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.5, "Yes", "No"))
+
+confusionMatrix(prediction, testing$binary_qc19)
+
+```
+
+The model has shown a slight improvement in both Accuracy and Specificity. However, there has been a slight decrease in Sensitivity. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is becoming marginally less effective at identifying positive cases.
+
+### Random Forest
+
+```{r}
+rfFit <- train(ModelS, 
+                  data = training,
+                  method = "rf",   
+                  preProc=c('scale','center'),
+                  tuneLength = 10, 
+                  metric="ROC",
+                  trControl = ctrl)
+
+```
+
+```{r}
+plot(rfFit)
+```
+
+Looking at the plot, we can observe that there is a peak performance at 5 neighbors. This is where the ROC AUC score is the highest amount the tested values, suggesting that the optimal number of neighbors for our data set, based on the cross validation process is around this value.
+
+```{r}
+rfProb = predict(rfFit, testing, type="prob")
+prediction <- as.factor(ifelse(rfProb[,"Yes"] > 0.5, "Yes", "No"))
+
+confusionMatrix(prediction, testing$binary_qc19)
+```
+
+The model shows a slight improvement in both Accuracy, Specificity and Sensitivity. From the models we have seen so far, this is the best one.
+
+### Gradient boosting
+
+```{r}
+ctrl$verboseIter=F
+
+gbmFit <- train(ModelS, 
+                  data = training,
+                  method = "xgbTree",   
+                  preProc=c('scale','center'),
+                  tuneLength = 20,
+                  metric="ROC",
+                  trControl = ctrl)
+
+plot(gbmFit)
+```
+
+```{r}
+
+gbmProb = predict(gbmFit, testing, type="prob")
+prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.5, "Yes", "No"))
+
+confusionMatrix(prediction, testing$binary_qc19)
+
+```
+
+Interpretation
+
+```{r}
+# Assessing variable importance
+gbm_imp <- varImp(rfFit, scale = F)
+plot(gbm_imp, scales = list(y = list(cex = .95)))
+```
+
+```{r}
+# Generate partial dependence plots for important variables
+partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
+partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
+```
+
+### Neural Networks
+
+```{r}
+ctrl$verboseIter=F
+
+nn_tune <- train(ModelS, 
+                 data = training,
+                 method = "nnet",  
+                 preProc = c('scale', 'center'),
+                 trControl = ctrl,
+                 tuneGrid = expand.grid(size = c(4, 2),  
+                                        decay = c(0.1, 0.01)),  
+                 metric = "ROC",
+                 linout = FALSE)
+
+plot(nn_tune)
+
+```
+
+```{r}
+nnProb <- predict(nn_tune, testing, type = "prob")
+nnPredictedClass <- as.factor(ifelse(nnProb[,"Yes"] > 0.5, "Yes", "No"))
+confusionMatrix(nnPredictedClass, testing$binary_qc19)
+```
+
+```{r}
+library(pROC)
+rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
+plot(rocObj, print.auc = TRUE)
+```
