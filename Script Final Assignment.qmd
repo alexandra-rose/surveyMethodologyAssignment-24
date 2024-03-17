@@ -313,7 +313,7 @@ df_country_1 <-
   df_descriptive |>
   group_by(country_name) |> 
   summarize(
-    prop_gndr_bin = (sum(qc20_multinominal == "Yes") / n())*100, # Calculate proportion with high education
+    prop_gndr_bin = (sum(qc20_multinominal == "Yes") / n())*100, # Calculate proportion 
     prop_qc19_yes = (sum(qc19 == 1) / n())*100)
 
 

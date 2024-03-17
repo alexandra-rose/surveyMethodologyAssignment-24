@@ -1,0 +1,18 @@
+---
+title: "Group presentation"
+date: 2024-01-24
+author: "Frederick, Nienke, Mika, Alex, Alicia"
+format: 
+  revealjs:
+    theme: simple
+    transition: slide
+    transition-speed: fast
+    embed-resources: TRUE
+    slide-number: c/t
+editor: visual
+logo: https://www.rstudio.com/wp-content/uploads/2018/10/RStudio-Logo-Flat.png
+---
+
+Cleaning the data
+
+Choosing the variables to build our models
