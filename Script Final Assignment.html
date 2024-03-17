@@ -3444,7 +3444,7 @@ Prediction   No  Yes
                                          </code></pre>
 </div>
 </div>
-<p>The model has shown a slight improvement in both Accuracy and Specificity. However, there has been a slight decrease in Sensitivity. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is becoming marginally less effective at identifying positive cases.</p>
+<p>The model has shown a slight improvement in Accuracy, Specificity and Sensitivity. However, is still really unbalanced. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is less effective at identifying positive cases.</p>
 </section>
 <section id="random-forest" class="level3">
 <h3 class="anchored" data-anchor-id="random-forest">Random Forest</h3>
@@ -3660,7 +3660,7 @@ Prediction   No  Yes
                                           </code></pre>
 </div>
 </div>
-<p>This is the best model so far, we an Accuracy of 74.89%, Sensitivity of 74.70% and a Specificity of 75.01%</p>
+<p>This is the best model so far, with an Accuracy of 74.89%, Sensitivity of 74.70% and a Specificity of 75.01%</p>
 <p>Variables Importance</p>
 <div class="cell">
 <div class="sourceCode cell-code" id="cb235"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb235-1"><a href="#cb235-1" aria-hidden="true" tabindex="-1"></a>gbm_imp <span class="ot">&lt;-</span> <span class="fu">varImp</span>(rfFit, <span class="at">scale =</span> F)</span>
