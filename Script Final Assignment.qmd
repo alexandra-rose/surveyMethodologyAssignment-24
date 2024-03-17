@@ -1797,7 +1797,7 @@ nnProb <- predict(nn_tune, testing, type = "prob")
 ```
 
 ```{r}
-rocObj <- roc(response = testing$binary_qc19 ~ nnProb[,"Yes"])
+rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
 plot(rocObj, col="red", print.thres = TRUE)
 
 ```
