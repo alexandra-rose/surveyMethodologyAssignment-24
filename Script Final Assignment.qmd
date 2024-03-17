@@ -1643,7 +1643,7 @@ confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-The model has shown a slight improvement in both Accuracy and Specificity. However, there has been a slight decrease in Sensitivity. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is becoming marginally less effective at identifying positive cases.
+The model has shown a slight improvement in Accuracy, Specificity and Sensitivity. However, is still really unbalanced. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is less effective at identifying positive cases.
 
 ### Random Forest
 
@@ -1740,9 +1740,9 @@ confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-This is the best model so far, we an Accuracy of 74.89%, Sensitivity of 74.70% and a Specificity of 75.01%
+This is the best model so far, with an Accuracy of 74.89%, Sensitivity of 74.70% and a Specificity of 75.01%
 
-Variables Importance
+Variables Importance 
 
 ```{r}
 gbm_imp <- varImp(rfFit, scale = F)
