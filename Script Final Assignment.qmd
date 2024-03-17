@@ -13,8 +13,6 @@ editor_options:
 
 ```{r}
 rm(list = ls())
-
-setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
 ```{r}
@@ -118,8 +116,6 @@ data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
 
 We believe that the data was missing some variables related to the legality aspect in a country level so we found this data.
 
-Citation: Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", <https://doi.org/10.7910/DVN/FXXLTS,> Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
-
 ```{r}
 Data_Extra_by_Country <- read_delim("data_extra_by_Country.csv", 
     delim = ";", escape_double = FALSE, trim_ws = TRUE)
@@ -156,11 +152,9 @@ merged_df_1 <- merge(data_cleaning_2, Data_Extra_by_Country, by = "country_name"
 
 **Economic Variables**
 
-The economic variables we choose were Unempoyment and GDP per capita.
+The economic variables we choose were Unemployment and GDP per capita.
 
 The data was attained from the World Bank.
-
-Citation: World Bank. (n.d.). DataBank: World Development Indicators \[Economy & Growth\]. Retrieved March 13, 2024, from <https://databank.worldbank.org/source/world-development-indicators>
 
 ```{r}
 Eco_Extra_Data <- read_delim("Eco Extra Data.csv", 
@@ -777,7 +771,6 @@ The correlation shows there is a very weak association in favor of the literatur
 -   During the last twelve months, would you say you had difficulties to pay your bills at the end of the month…?
 
 ```{r}
-
 df_descriptive <- 
   df_descriptive |> 
   mutate(
@@ -933,7 +926,7 @@ chisq.test(table)
 
 With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
 
-### Descriptive analysis for country level economic variables (GDP per capita and unemployment)
+### Country level economic variables (GDP per capita and unemployment)
 
 ```{r}
 data_desc <- df_descriptive  |> 
@@ -972,7 +965,7 @@ print(kruskal_gdppc)
 
 In both cases, the p-values are less than the significance level of 0.05, we reject the null hypothesis of the Kruskal-Wallis test, which states that the group medians are equal. This results imply that the group medians are not all equal, and there is evidence of a difference among the groups defined by the our dependent variable.
 
-### MODELING
+## MODELING
 
 **Dependent Variable (qc19)**
 
@@ -1570,7 +1563,7 @@ Looking at the plot, we can observe that there is a peak performance at around 1
 
 ```{r}
 knnProb = predict(knnFit, testing, type = "prob")
-prediction <- as.factor(ifelse(knnProb[,"Yes"] > 0.6, "Yes", "No"))
+prediction <- as.factor(ifelse(knnProb[,"Yes"] > 0.5, "Yes", "No"))
 confusionMatrix(prediction, testing$binary_qc19)
 
 ```
