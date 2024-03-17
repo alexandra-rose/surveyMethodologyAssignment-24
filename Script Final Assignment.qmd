@@ -20,7 +20,7 @@ setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/
 ```{r}
 library(haven)
 library(readr)
-library(haven)
+library(haven) 
 library(writexl)
 library(sjlabelled)
 library(tidyverse)
@@ -41,6 +41,10 @@ library(caret)
 library(rpart)
 library(rpart.plot)
 library(lme4)
+library(pROC)
+library(pROC)
+library(caret)
+library(pdp)
 ```
 
 ### Data
@@ -907,7 +911,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-plot1 <- leaflet(df_plot) %>%
+plot <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -917,7 +921,7 @@ plot1 <- leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-plot1
+plot
 ```
 
 **Association**
@@ -1499,15 +1503,10 @@ summary(logit.model)
 ```
 
 ```{r}
-ctrl <- trainControl(method = "cv") # 10-fold cross-validation number = 10) 
-significant_vars <- c()
-
-
-#use the testing data to predict the target variable
 probability <- predict(logit.model, newdata=testing, type='response')
 head(probability)
 
-prediction <- as.factor(ifelse(probability > 0.5, TRUE, FALSE))
+prediction <- as.factor(ifelse(probability > 0.6, TRUE, FALSE))
 head(prediction)
 ```
 
@@ -1571,7 +1570,7 @@ Looking at the plot, we can observe that there is a peak performance at around 1
 
 ```{r}
 knnProb = predict(knnFit, testing, type = "prob")
-prediction <- as.factor(ifelse(knnProb[,"Yes"] > 0.5, "Yes", "No"))
+prediction <- as.factor(ifelse(knnProb[,"Yes"] > 0.6, "Yes", "No"))
 confusionMatrix(prediction, testing$binary_qc19)
 
 ```
@@ -1609,7 +1608,6 @@ rpart.plot(dtFit, digits=4)
 **Prediction**
 
 ```{r}
-dtPred <- predict(dtFit, testing, type = "class")
 
 dtProb <- predict(dtFit, testing, type = "prob")
 
@@ -1618,7 +1616,7 @@ prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.5, "Yes", "No"))
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-We can observe an improvement in the model's accuracy, now at 75%. There's also a notable increase in sensitivity, which is currently at 63.29%, suggesting better detection of positive cases. Specificity remains nearly unchanged and is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
+We can observe an improvement in the model's accuracy, now at 74.99%. There's also a notable increase in sensitivity, which is currently at 63.29%, suggesting better detection of positive cases. Specificity remains nearly unchanged and is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
 
 ### Using Caret
 
@@ -1643,7 +1641,10 @@ Prediction
 ```{r}
 dtProb <- predict(caret.fit, testing, type = "prob")
 
-prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.5, "Yes", "No"))
+rocObj <- roc(response = testing$binary_qc19, predictor = dtProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+
+prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.583, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 
@@ -1658,99 +1659,170 @@ rfFit <- train(ModelS,
                   data = training,
                   method = "rf",   
                   preProc=c('scale','center'),
-                  tuneLength = 10, 
+                  tuneGrid = data.frame(mtry = 5), # after runing a tuneLength=10 the results gave that the optimal parameter for this model is that.
                   metric="ROC",
                   trControl = ctrl)
 
 ```
 
-```{r}
-plot(rfFit)
-```
-
-Looking at the plot, we can observe that there is a peak performance at 5 neighbors. This is where the ROC AUC score is the highest amount the tested values, suggesting that the optimal number of neighbors for our data set, based on the cross validation process is around this value.
+Looking at the plot, we can observe that there is a peak performance at 5 neighbors. This is where the ROC AUC score is the highest amount the tested values, suggesting that the optimal number of neighbors for our data set, based on the cross validation process is around this value. This is why the code was change to have a mtry=5 in order to run more rapid and not to take hours.
 
 ```{r}
 rfProb = predict(rfFit, testing, type="prob")
-prediction <- as.factor(ifelse(rfProb[,"Yes"] > 0.5, "Yes", "No"))
+
+rocObj <- roc(response = testing$binary_qc19, predictor = rfProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+
+prediction <- as.factor(ifelse(rfProb[,"Yes"] > 0.643, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-The model shows a slight improvement in both Accuracy, Specificity and Sensitivity. From the models we have seen so far, this is the best one.
+The model shows a slight decrease in Accuracy. Howewver, the balance for Specificity and Sensitivity has improved.
+
+#### `NOTE` As the last models where taking more than 8 hours to process, we decided to use Parallel Processing and a custom grid.
+
+```{r}
+library(doParallel)
+```
+
+```{r}
+numCores <- detectCores() - 1
+registerDoParallel(cores=numCores)
+
+```
+
+```{r}
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 10,
+                     repeats = 1,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary,
+                     verboseIter = FALSE,
+                     allowParallel = TRUE) # allowing for the parallel processing
+```
 
 ### Gradient boosting
 
 ```{r}
-ctrl <- trainControl(method = "repeatedcv", 
-                     number = 5,
-                     classProbs = T,
-                     summaryFunction=twoClassSummary,
-                     verboseIter = F)
+# custom grid to make the computational process run within less than 8 hours, we tune in each parameter and found this one where the optimal onces.
+tune_grid_gbm <- expand.grid(
+    nrounds = c(100, 600),  
+    max_depth = 4,          
+    eta = 0.05,     
+    gamma = 0,              
+    colsample_bytree = 0.8, 
+    min_child_weight = 1,   
+    subsample = 0.8         
+)
 
+set.seed(456)
+
+# Update the train function call to use the new tune grid
 gbmFit <- train(ModelS, 
-                  data = training,
-                  method = "xgbTree",   
-                  preProc=c('scale','center'),
-                  tuneLength = 20,
-                  metric="ROC",
-                  trControl = ctrl)
-
-plot(gbmFit)
+                data = training,
+                method = "xgbTree",
+                preProc = c('scale', 'center'),
+                tuneGrid = tune_grid_gbm,
+                metric = "ROC",
+                trControl = ctrl)
 ```
 
 ```{r}
+plot(gbmFit)
+```
 
+Going for more that 600 iterations made the model have a worst ROC.
+
+```{r}
 gbmProb = predict(gbmFit, testing, type="prob")
-prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.5, "Yes", "No"))
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+```
+
+```{r}
+prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.608, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-Interpretation
+This is the best model so far, we an Accuracy of 74.89%, Sensitivity of 74.70% and a Specificity of 75.01%
+
+Variables Importance
 
 ```{r}
-# Assessing variable importance
 gbm_imp <- varImp(rfFit, scale = F)
 plot(gbm_imp, scales = list(y = list(cex = .95)))
 ```
 
+Partial dependence plot for the two most important variables
+
 ```{r}
-# Generate partial dependence plots for important variables
-partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
-partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
+partial(gbmFit, pred.var = "prop_gndr_bin", plot = TRUE, rug = TRUE)
+partial(gbmFit, pred.var = "d11", plot = TRUE, rug = TRUE)   
 ```
+
+For the gndr_bin plot, it shows that as the value of prop_gndr_bin increases, the predicted value (yhat) tends to decrease, meaning that there's a negative association between prop_gndr_bin and the predicted outcome.
+
+For the d11 plot, it shows a more complex, non-linear relationship. This is something we adressed by adding the quadratic age term.
+
+Both plot further evidence the insight we have gatherer throught this analisis.
+
+```{r}
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
+plot(rocObj, print.auc = TRUE)
+```
+
+The AUC value of 0.821 suggests that the Gradient Boosting model has a good measure of separability. Meaning that there is an 82.1% chance that the model is be able to distinguish between positive class (countries supporting the right of transgender individuals to change their civil documents) and negative class (countries not supporting). The curve is also close to the top left corner of the graph, which means that our model has a high sensitivity (it correctly identifies a high percentage of actual positives) and a high specificity (it correctly identifies a high percentage of actual negatives). In conclusion, the ROC curve indicates that the Gradient Boosting model performs well on our data set with a balance between sensitivity and specificity.
 
 ### Neural Networks
 
 ```{r}
+tune_grid_nn <- expand.grid(size = c(3,4), decay = 0.01) # various parameters were used but the best results suggested by the plot code are these values.
+set.seed(789)
 nn_tune <- train(ModelS, 
                  data = training,
                  method = "nnet",  
                  preProc = c('scale', 'center'),
-                 trControl = ctrl,
-                 tuneGrid = expand.grid(size = c(4, 2),  
-                                        decay = c(0.1, 0.01)),  
+                 tuneGrid = tune_grid_nn,
                  metric = "ROC",
-                 linout = FALSE)
-
-plot(nn_tune)
-
+                 trControl = ctrl,
+                 linout = FALSE,
+                 trace = FALSE)
 ```
+
+```{r}
+plot(nn_tune)
+```
+
+If we choose a value over 4, ROC decreases.
 
 ```{r}
 nnProb <- predict(nn_tune, testing, type = "prob")
-nnPredictedClass <- as.factor(ifelse(nnProb[,"Yes"] > 0.5, "Yes", "No"))
-confusionMatrix(nnPredictedClass, testing$binary_qc19)
+
 ```
 
 ```{r}
-library(pROC)
+rocObj <- roc(response = testing$binary_qc19 ~ nnProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+
+```
+
+```{r}
+nnPredictedClass <- as.factor(ifelse(nnProb[,"Yes"] > 0.629, "Yes", "No"))
+confusionMatrix(nnPredictedClass, testing$binary_qc19)
+```
+
+The Accuracy levels decrease to 73%, as well as, the Specificity to 75.24%. For the Sensitivity there is an improvement to 72%.
+
+```{r}
 rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
 plot(rocObj, print.auc = TRUE)
 ```
 
-### Final Predictive model
+This plot is further evidence that the best predictive model is the gradient boosting one. As it has a higher AUC, indicating a better overall performance in terms of distinguishing between the two classes of our dependent variable.
 
-The predictive model for other countries chosen is the
+### Final Predictive Model
+
+The selected predictive model for our international analysis is Gradient Boosting, which has consistently outperformed all other models in terms of accuracy. This model not only demonstrates the highest accuracy but also achieves the most balanced rates of specificity and sensitivity. Such a robust performance profile makes it the optimal choice for our data set. We found that this model is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents to reflect their gender identity.
