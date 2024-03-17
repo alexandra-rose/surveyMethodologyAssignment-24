@@ -1654,7 +1654,7 @@ rfFit <- train(ModelS,
                   preProc=c('scale','center'),
                   tuneGrid = data.frame(mtry = 5), # after runing a tuneLength=10 the results gave that the optimal parameter for this model is that.
                   metric="ROC",
-                  trControl = ctrl)
+                  trControl = ctrl) 
 
 ```
 
