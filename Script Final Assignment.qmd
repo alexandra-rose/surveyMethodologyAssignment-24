@@ -1581,16 +1581,15 @@ We adjust the dependent variable class.
 training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
 
 testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
-
-<<<<<<< HEAD
-=======
+```
 ### Setting the control function
+
+```{r}
 ctrl <- trainControl(method = "repeatedcv", 
                      number = 10,
                      classProbs = T,
                      summaryFunction=twoClassSummary,
                      verboseIter = T)
->>>>>>> d89ee232e6b09afa0751be4067cc336d1af2afaf
 ```
 
 ### Predicting using the logistic regression
