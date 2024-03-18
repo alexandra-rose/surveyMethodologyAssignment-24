@@ -1028,6 +1028,7 @@ df_descriptive <- df_descriptive %>%
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, Cat_age_four,Cat_age_six,Cat_age_seven), by = "serialid")
 ```
 
+
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, d11), by = "serialid")
 
