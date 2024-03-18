@@ -1,5 +1,5 @@
 ---
-title: "Final Assignment"
+title: "Final Assignment - Explaining support for transgender rights across Europe"
 author: Frederick Peña, Alexandra Salo and Sofia Villamil
 format: html
 editor: visual
@@ -14,7 +14,7 @@ editor_options:
 ```{r}
 rm(list = ls())
 
-setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
+#setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
 ```{r}
@@ -29,6 +29,7 @@ library(dplyr)
 library(gmodels)
 library(scales)
 library(rnaturalearth)
+library(rnaturalearthdata)
 library(sf)
 library(ggplot2)
 library(leaflet)
@@ -41,6 +42,9 @@ library(caret)
 library(rpart)
 library(rpart.plot)
 library(lme4)
+library(Matrix)
+library(lattice)
+library(pROC)
 ```
 
 ### Data
@@ -167,20 +171,15 @@ Eco_Extra_Data <- read_delim("Eco Extra Data.csv",
 merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRUE)
 ```
 
-## DESCRIPTIVE ANALYSIS
+## DESCRIPTIVE ANALYSIS - Explaining cross-country differences
 
-### First look at association
-
--   the descriptive analysis will oscillate between individual-level and country-level analysis
-
-### Question
-
--   what to do with refusal ? = NA
--   what to do with don't know? = NA
+In this section, we will try to reveal predictors of support or lack thereof for transgender rights, specifically the ability to change civic documents. During this step, we will oscillate between individual-level and country-level analyses, developing our thoughts based on a previous literature review during which we identified key predictors explaining support of transgender rights. (see Campbell et al., 2019; Earl et al., 2020; Flores, 2015; Flores et al., 2016; Harrison and Michelson, 2019; Norton and Herek, 2013)
 
 ### Gender
 
-Assumption from literature –\> men less supportive than women
+First, we focus on gender as a predictor of support for transgender rights.
+
+We visually show that men, in line with the literature, post lower rates in support and higher rates in rejection than women.
 
 ```{r}
 
@@ -215,14 +214,9 @@ caption = "Source: Eurobarometer 91.4") +
 
 
 ```
-
 ### Binary conception of gender
 
-predictor of support of US sample
-
-operationalization using question 20 on if there should be a third gender option
-
-Table
+To operationalize the binary conception of gender we draw on the variable **'qc20'** for which respondents had to giver information about their believes regarding a third gender option on legal documents.
 
 ```{r}
 df_descriptive$qc20_multinominal <- factor(df_descriptive$qc20, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
@@ -238,9 +232,7 @@ CrossTable(df_descriptive$qc19_multinominal, df_descriptive$qc20_multinominal,
 
 Since the p-value is much smaller than the conventional significance level of 0.05, we reject the null hypothesis. This suggests that there is a significant association between the variables **`qc19`** and **`qc20`**.
 
-Very high convergence of people against a third gender option and rejecting
-
-88.29% of those against a third gender option also negate the option for transgender persons to change their gender in civil documents.
+When looking at the cross table, we can identify a very high convergence of people against a third gender option and rejecting the ability for transgender to adjust their civic documents, while the inverse is true for individuals who support the same measure singificantly.
 
 ```{r}
 plot_binary_1 <-
@@ -300,14 +292,9 @@ ggplot(aes(x = country_name, y = share_no)) +
 plot_binary_1
 plot_binary_2
 ```
+The plots show that this high convergence can also be seen on the country level, where countries in which the share of people opposing a third gender option almost mirrors that of the share who oppose more expanded transgender rights when ranked.
 
--   visually this high convergence can also be seen on the country level
-
--   to verify this statistically, the Spearman rank test is used as the country-level proportions are not normally distributed
-
--   the statistical association between agreeing there should be a third gender option and supporting the ability for transgender people to change their civil document on the country level is estimated
-
--   the Spearman rank test reports a very strong positive relationship between the two variables supporting the previous assertion that the acceptance of a third gender differentiates countries concerning their average approval of the civil document alteration for transgender people
+To verify this association statistically, the Spearman rank test is used as the country-level proportions are not normally distributed. The Spearman rank test reports a very strong positive relationship between the two variables supporting the previous assertion that the acceptance of a third gender differentiates countries concerning their average approval of the civil document alteration for transgender people
 
 ```{r}
 df_country_1 <- 
@@ -323,6 +310,8 @@ cor(df_country_1$prop_gndr_bin, df_country_1$prop_qc19_yes, method = "spearman")
 
 ### Political ideology
 
+In the following we turn our attention to the political ideology of individuals.
+
 ```{r}
 df_descriptive$d1_ordinal <- factor(df_descriptive$d1, levels = c(1, 2, 3, 4 , 5, 6, 7, 8, 9, 10, 97, 98),labels = c("Left", "2", "3", "4", "5", "6", "7", "8", "9", "Right", "Non-response", "Don't know"))
 
@@ -335,25 +324,15 @@ CrossTable(df_descriptive$d1_ordinal, df_descriptive$qc19_multinominal,
            format="SPSS")
 ```
 
-Note:
+Upfront, it is important to note that 25% of respondents chose option 5, which represents the exact middle ground.
 
--   25% of people chose 5, the exact middle ground
+Nonetheless there are surprising results. While the inherent idea is upheld that a greater share of more left-leaning people are in favor of transgender rights, the difference to very right-leaning people is not that great - 60% in favor - 30% against for left leaning individuals  vs. 43% in favor -45% against for right leaning individuals.
 
-Surprising results:
+Of course, we have to consider common limitations of self-reporting left-right scales such as accuracy. Additionally, there is a significant amount of information  hidden in the 'non-response' and 'Don't know' groups of political ideology as they have greater 'Don't know' rates for our dependent variable.
 
--   The inherent idea is upheld that a greater share of more left-leaning people are in favor
+All in all, we can still see a significant association, which, however, is maybe not as strong as suspected.
 
--   However, difference to very right-leaning people is not that great (60-30 left vs. 43-45 right)
-
-Problem:
-
--   self-reporting self-right scale might not be so accurate
-
--   a lot of information is hidden in the non-response and don't know groups of political ideology as they have greater don't know rates for qc19
-
-Take-away
-
--   Still significant association (but maybe not as strong as suspected)
+The results are visualized below.
 
 ```{r}
 
@@ -383,10 +362,9 @@ df_descriptive |>
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   scale_fill_brewer(palette = "Dark2")
 ```
-
-#### Add government ideology as better proxy
-
 ### Religiosity
+
+Moving on the religious affiliation, we had to recode the variable slightly due to low numbers for certain categories (see below).
 
 ```{r}
 df_descriptive <-
@@ -411,9 +389,7 @@ CrossTable(df_descriptive$sd3_cat, df_descriptive$qc19_multinominal,
            format="SPSS")
 ```
 
-Problem:
-
--   Very low counts for Jewish, Muslim, Other and Other Christian as can be seen in the plot below
+Almost immediately, we see very low counts for Jewish, Muslim, Other and Other Christian. This is visualized by the polit below.
 
 ```{r}
 df_descriptive |> 
@@ -428,17 +404,9 @@ df_descriptive |>
   theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
 
-Findings:
+Nonetheless, there are some general takeaways. Religiosity itself is not associated with lower levels of support for transgender rights, as Protestants as much as Atheists and Agnostics report high levels of support. Among Catholics, support is higher as well relatively, but it is less strong. Orthodox Christian present strong outlier with being strongly against transgender rights.
 
--   on the individual level not believing in God more say yes as well as Protestant
-
--   Catholics in favor but less strongly
-
--   Orthodox Christian strong outlier with being against it
-
-Summary:
-
--   roughly one may say that countries with a higher share of Orthodox Christians may be rather against it
+Below we extrapolate this to the country level, showing that there is a high convergence of majoritarian Christian orthodox countries and the rejection of transgender rights. 
 
 ```{r}
 df_descriptive |> 
@@ -462,6 +430,8 @@ ggplot(aes(x = country_name, y = share)) +
 
 ### Contact
 
+Next, we looked at interpersonal contact with transgender individuals as a possible predictor.
+
 ```{r}
 df_descriptive <-
   df_descriptive |> 
@@ -479,15 +449,12 @@ CrossTable(df_descriptive$sd1_7_multinomial, df_descriptive$qc19_multinominal,
            format="SPSS")
 ```
 
--   association is statistically significant
+Again the p-value is below 0.05 rendering the association statistically significant.
 
--   the majority of people did not have contact with a transgender person
+First off, the majority of people did not have contact with a transgender person. 
+Nonetheless, there is a clear tendency on the individual level that among those that have not had contact with a transgender person the approval is relatively lower as for those who have had the margin is very clear (76% vs 18%). However, contact is associated rather with approval. Not having had contact is not associated with being predominantly against transgender rights, but rather is associated with lower approval rates.
 
--   there is a clear tendency on the individual level that among those that have not had contact with a transgender person the approval is relatively lower as for those who have had the margin is very clear (76% vs 18%)
-
--   contact is associated rather with approval. Not having had contact not associated with being against, just lower approval
-
--   this is visualised below
+We visualize this below.
 
 ```{r}
 df_descriptive|> 
@@ -514,20 +481,15 @@ df_descriptive|>
 
 ### Age
 
--   using anova to seek out differences between those who responded 'yes', 'no', don't know' by age
-
--   p-value let's us reject the null hypothesis. There is a statistically significant difference between at least two groups
+For age we use ANOVA to seek out differences between those who responded 'yes', 'no', don't know' by age.
 
 ```{r}
 anova <- aov(d11 ~ qc19_multinominal, data = df_descriptive)
 summary(anova)
 ```
+The low p-value lets us reject the null hypothesis meaning there is a statistically significant difference between at least two groups.
 
--   visualizing group difference using boxplots
-
--   showing that the strongest difference is between those saying 'yes' and those stating 'don't know'
-
--   implies there is valuable information from particularly older people missing
+When visualizing group difference as below by using boxplots, we see that the most pronounced difference is between those saying 'yes' and those stating 'don't know'. With the latter group being older in comparison. This implies there is valuable information from particularly older people missing.
 
 ```{r}
 ggplot(df_descriptive, aes(x = qc19_multinominal, y = d11, fill = "red")) +
@@ -540,9 +502,7 @@ ggplot(df_descriptive, aes(x = qc19_multinominal, y = d11, fill = "red")) +
   theme(legend.position = "none")
 ```
 
--   regarding the difference between 'yes' and 'no' - those reporting the former are generally a bit younger
-
--   employ a correlation to look at strength and direction of the association while differentiating only between Yes and No
+Concerning the difference between 'yes' and 'no', those reporting the former are generally a bit younger. To check this assumption we employ a correlation to look at strength and direction of the association while differentiating only between 'yes' and 'no'. As suggested above, the association is negative suggesting an age-based association as suggested above as a one year increase in age decreases approval.
 
 ```{r}
 df_cor_age <- 
@@ -554,13 +514,9 @@ df_cor_age <-
 cor(df_cor_age$d11, df_cor_age$qc19)
 ```
 
--   as already implied above only a slight relation ship
-
--   negative direction shows that a one year increase in age decreases approval
-
 ### Awareness
 
--   if type of discrimination is widespread in own country
+To operationalize awareness, we draw on a variable asking respondents to report how wide spread, according to them discrimination against transgender indivduals is in their own country.
 
 ```{r}
 df_descriptive$qc1_8_ordinal <- factor(df_descriptive$qc1_8, levels = c(1, 2, 3, 4 , 5, 6),labels = c("Very wide spread", "Fairly wide spread", "Fairly rare", "Very rare", "Nonexistent
@@ -575,11 +531,11 @@ CrossTable(df_descriptive$qc1_8_ordinal, df_descriptive$qc19_multinominal,
            format="SPSS")
 ```
 
--   p-value lets us very confidently state that there is a statistically significant relationship between the variables
+Again, the low p-value lets us very confidently state that there is a statistically significant relationship between the variables. Among those reporting transgender people face very or fairly wide spread discrimination, the relative support for the possibility to change civil documents is greater than for those stating it is fairly rare, while among those reporting it is very rare the share between supporters and opponents is balanced.
 
--   among those reporting transgender people face very or fairly wide spread discrimination, the relative support for the possibility to change civil documents is greater than for those stating it is fairly rare, while among those reporting it is very rare the share between supporters and opponents is balanced
+This insinuates that while there is a clear association between more awareness and greater support for transgender rights, the inverse is not represented in our data, although individuals stating discrimination against transgender individuals is non-existent show a slightly inverted association.
 
--   this clear association between more awareness and greater support is visible below
+This is also visualized below:
 
 ```{r}
 df_descriptive|> 
@@ -604,9 +560,9 @@ df_descriptive|>
   scale_fill_brewer(palette = "Dark2")
 ```
 
--   between countries
+We also investigate this relationship on the country-level.
 
--   countries which have a higher share of approval are to be found rather towards the
+The plot below shows that countries which have a higher share of approval of transgender rights are found rather towards the higher end of the ranked graph plotting the share of respondents (by country) reporting fairly or very widespread discrimination against transgender individuals.
 
 ```{r}
 df_descriptive |> 
@@ -633,9 +589,7 @@ ggplot(aes(x = country_name, y = share)) +
   geom_text((aes(label = sprintf("%.1f%%", share))),vjust = -0.5, size = 2)
 ```
 
--   to further investigate the country-level differences the association of the proportion of individuals aware of discrimination per country and the proportion of individuals in favor of the ability of transgender people to change their civil documents
-
--   because the variables are non-normally distributed, we use the Spearman rank test
+To further investigate the country-level differences, the association of the proportion of individuals aware of discrimination per country and the proportion of individuals in favor of the ability of transgender people to change their civil documents is investigated. Again, because the variables are non-normally distributed, we use the Spearman rank test. The test shows a moderately strong relationship between awareness of discrimination faced by transgender people on the country-level insinuating that in countries with greater awareness there is greater support for transgender rights.
 
 ```{r}
 df_country_2 <-
@@ -654,9 +608,9 @@ df_country_2 <-
 cor(df_country_2$prop_dis_wide, df_country_2$prop_qc19_yes, method = "spearman")
 ```
 
--   the test shows a strong relationship between awareness of discrimination faced by transgender people on the country-level insuating that in countries with greater awareness there is greater support
-
 ### Solidarity among minority groups
+
+We now investigate, whethere there is solidarity between minority groups.
 
 ```{r}
 df_descriptive <- 
@@ -691,7 +645,7 @@ df_descriptive|>
   scale_fill_brewer(palette = "Dark2")
 ```
 
-However, this support is much greater among people who themselves are a sexual minority. As such, people with similar experiences as transgender people are more likely to support transgender rights.
+We therefore, focus only on people self-identifying as part of a sexual minority. Support is much greater among people who themselves are a sexual minority. As such, people with similar experiences as transgender people are more likely to support transgender rights.
 
 ```{r}
 df_descriptive <- 
@@ -725,11 +679,7 @@ df_descriptive|>
 
 ### Education
 
--   age when leaving formal education
-
--   expected that higher and lower ages are outliers
-
--   one is able to gauge differences between the 'yes' and 'no' respondents with the former reporting a slightly higher age as their mode (highest frequency)
+We now turn our focus to the age when leaving and completing formal education.
 
 ```{r}
 df_descriptive <- 
@@ -749,17 +699,18 @@ ggplot(df_descriptive, aes(x = qc19_multinominal, y = d8, fill = "red")) +
 
 ```
 
-The ANOVA analysis supports the claim, at least, that the groups are statistically significantly different from one another.
+We first investigate difference by employing a boxplot graph differentiating between 'yes', 'no', and 'don't know' respondents with the former reporting a slightly higher age as their mode (highest frequency).
+
+The ANOVA analysis supports the claim, as there are at least two groups statistically significantly different from one another.
 
 ```{r}
 anova <- aov(d8 ~ qc19_multinominal, data = df_descriptive)
 summary(anova)
 ```
-
 ```{r}
-df_cor_age <- df_descriptive %>%
-  select(qc19, d8) %>%
-  filter(qc19 %in% c(1, 2)) %>%  
+df_cor_age <- df_descriptive |> 
+  select(qc19, d8) |> 
+  filter(qc19 %in% c(1, 2)) |>   
   mutate(qc19 = as.numeric(qc19 == 1)) 
 
 cor(df_cor_age$d8, df_cor_age$qc19, use = "complete.obs")
@@ -770,7 +721,7 @@ The correlation shows there is a very weak association in favor of the literatur
 
 ### The economic situation
 
--   During the last twelve months, would you say you had difficulties to pay your bills at the end of the month…?
+We operationalize the respondent's current economic situation by a variable inquiring if, during the last twelve months, would the respondent would say they had difficulties to pay their bills at the end of the mont.
 
 ```{r}
 
@@ -790,14 +741,9 @@ CrossTable(df_descriptive$d60_ordinal, df_descriptive$qc19_multinominal,
            format="SPSS")
 ```
 
--   following the literature, among those who never or almost never had difficulties to pay their bills at the end of the month, the support for the possibility of transgender people to alter their gender in their civic documents is markedly higher.
+Agains, we can reject the null hypothesis implying a statistically significant association. Following the literature, among those who never or almost never had difficulties to pay their bills at the end of the month, the support for the possibility of transgender people to alter their gender in their civic documents is markedly higher.
 
--   the low p-value indicates that the association is statistically significant
-
--   confers with literature
-
--   this difference is visualized by the graph below
-
+This difference is visualized by the graph below:
 ```{r}
 df_descriptive|> 
   drop_na(d60_ordinal) |> 
@@ -821,7 +767,9 @@ df_descriptive|>
   scale_fill_brewer(palette = "Dark2")
 ```
 
-### Support for LGBT rights
+### Support for LGB rights
+
+Following we consider support for equal rights for lesbian, gay, and bisexual (LGB) individuals as a possible predictor.
 
 ```{r}
 df_descriptive <- 
@@ -839,15 +787,9 @@ CrossTable(df_descriptive$qc15_1_ordinal, df_descriptive$qc19_multinominal,
            format="SPSS")
 ```
 
--   the p-value indicates statistical significance concerning the association between the two variables
+The p-value indicates statistical significance concerning the association between the two variables. As may be expected, among those disagreeing that people part of the LGB community should have equal rights the support is very low and the rejection of the possibility. Rejection is almost as pronounced as the support regarding transgender people's ability to change their gender identification of those who totally agree people of the LGB community should have the same rights. As such, we find a 'two-way association'.
 
--   as may be expected, among those disagreeing that people part of the LGB community should have equal rights the support is very low and the rejection of the possibility
-
--   rejection is almost as pronounced as the support regarding transgender people's ability to change their gender identification of those who totally agree people of the LGB community should have the same rights
-
--   important: two way association
-
--   on the country level
+We again extrapolate to the country level.
 
 ```{r}
 df_country_3 <- 
@@ -866,13 +808,56 @@ df_country_3 <-
 cor(df_country_3$prop_lgb_yes, df_country_3$prop_qc19_yes, method = "spearman")
 ```
 
--   very strong association on the country level indicating that most likely countries where there is greater support for the legal equality for LGB people also post higher support rates for the adoption of legislation allowing transgender people to change their gender in civic documents
+We find a very strong association on the country level indicating that most likely countries where there is greater support for the legal equality for LGB people also post higher support rates for the adoption of legislation allowing transgender people to change their gender in civic documents. While this only captures the support direction, As outlined above, a similar strength may be expected for the revers association.
 
--   this only captures the support direction. As outlined above, a similar strength may be expected for the revers association.
+### Rural vs. urban
 
-### Legal protections for the transgender community by country level
+Returning to the individual level, we turn our attention to the rural - urban divide.
 
-To observe if there is are general legal protections across various countries within our data set, an interactive map was developed.
+```{r}
+df_descriptive$d25_multinominal <- factor(df_descriptive$d25, labels = c("Rural area", "Small and middle sized town", "Large town", "Don't know"))
+
+# levels = c(1, 2, 3)
+
+CrossTable(df_descriptive$d25_multinominal, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+Again, the association between the variables is statistically significant. We find that rural area respondents report a lower support and higher rejection than respondents from urban areas.
+
+However, as can be seen below, this difference is not very pronounced.
+
+```{r}
+df_descriptive|> 
+  drop_na(d25_multinominal) |> 
+  filter(d25_multinominal != "Don't know") |> 
+  group_by(d25_multinominal, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(d25_multinominal) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = d25_multinominal, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by times type of residence of respondent",
+       x = "Place of residence in...",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+### Legal protections for the transgender community
+
+Turning to the country-level again, to observe if there is are general legal protections across various countries within our data set, an interactive map is developed.
 
 ```{r}
 df <- df_descriptive %>% 
@@ -927,9 +912,20 @@ table <- table(df_descriptive$qc19_multinominal,df_descriptive$adp_general)
 chisq.test(table)
 ```
 
-With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establish if a country has general legal protections against discrimination for transgender individuals.
+With this results we can conclude that there is a statistically significant relationship between the our dependent variables and the variable that establishes if a country has general legal protections against discrimination for transgender individuals. The cross table below shows that countries with general provisions to protect the transgender community post a higher share of people in favor of expanding transgender rights.
 
-### Descriptive analysis for country level economic variables (GDP per capita and unemployment)
+```{r}
+CrossTable(df_descriptive$adp_general, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+
+### Country-level economic variables (GDP per capita and unemployment)
 
 ```{r}
 data_desc <- df_descriptive  |> 
@@ -968,7 +964,8 @@ print(kruskal_gdppc)
 
 In both cases, the p-values are less than the significance level of 0.05, we reject the null hypothesis of the Kruskal-Wallis test, which states that the group medians are equal. This results imply that the group medians are not all equal, and there is evidence of a difference among the groups defined by the our dependent variable.
 
-### MODELING
+### PREDICTION
+### Statistical modeling
 
 **Dependent Variable (qc19)**
 
@@ -1079,7 +1076,7 @@ Individual_data$Religion_cat <- factor(Individual_data$Religion_cat)
 
 ```
 
-**sd1_7**
+**Contact with transgender people (sd1_7)**
 
 *Do you have friends or acquaintances who are transgender?*
 
@@ -1094,7 +1091,7 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```
 
-**d8**
+**Age when completing full-time education (d8)**
 
 *How old were you when you stopped full‐time education?*
 
@@ -1115,7 +1112,7 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```
 
-**d60_ordinal**
+**Personal economic situation (d60_ordinal)**
 
 *During the last twelve months, would you say you had difficulties to pay your bills at the end of the month…?*
 
@@ -1133,7 +1130,7 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```
 
-**d25**
+**Place of residence (type) (d25)**
 
 *Would you say you live in a...?*
 
@@ -1151,14 +1148,14 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 ```
 
-**qc15_1_ordinal**
+**Equal rights for the LGB community (qc15_1_ordinal)**
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc15_1_ordinal), by = "serialid")
 
 ```
 
-**qc1_8_ordinal**
+**Discrimination against the transgender community (qc1_8_ordinal)**
 
 ```{r}
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc1_8_ordinal), by = "serialid")
@@ -1170,6 +1167,8 @@ COUNTRY LEVEL
 **Variables created earlier country level.**
 
 Examining the influence of country-level proportion of respondents to a particular outcome. Aimed at understanding differences between countries on various outcomes.
+
+These variables include the proportion of individuals who express support for having a third gender option, support for lesbian, gay and bisexual (LGB) rights, and the share of individuals who find discrimination against transgender people to be widespread by country.
 
 ```{r}
 Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes), 
@@ -1250,15 +1249,12 @@ logit_model <- glm(binary_qc19 ~ ., family=binomial(link='logit'), data= data_re
 
 summary(logit_model)
 ```
-
 There are several variables that are not significant. We also tried the regression with the categories of variables for age that we had and they were also not significant. We will now proceed to reduce the variables used.
-
 ```{r}
 logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology + Religion_cat + sd1_7_factor +   d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
 
 summary(logit_model2)
-
 ```
 
 We are going to transform the age variable to include a quadratic term as we suspect the relationship between age and the dependent variable is not linear.
@@ -1294,19 +1290,19 @@ exp(coef(logit_model3))
 
 In our analysis at the individual level, we observe that there are distinct factors influencing support for transgender individual's ability to change their civil documents to match their inner gender identity. The variations in support across the different demographics and beliefs in our data highlight the reality and complexity of public opinion on this issue.
 
-Gender and Age play significant roles in this matter. For the case of Gender, females appear to show higher odds of support compared to males. This could be related to the potential influence of the traditional gender roles and perceptions we have on our society. Moreover, the Age variables show that there is a slight increase in support for our dependent variable for each additional year of age. This might suggests that life experiences or generational shifts could gradually influence views towards more inclusive attitudes, however, age influence is minimal in comparison to the other variables represented in our regression.
+Gender and age play significant roles in this matter, confirming literature cited. For the case of gender, females appear to show higher odds of support compared to males. This could be related to the potential influence of the traditional gender roles and perceptions we have on our society. Moreover, the age variables show that there is a slight increase in support for our dependent variable for each additional year of age. This might suggest that life experiences or generational shifts could gradually influence views towards more inclusive attitudes, however, age influence is minimal in comparison to the other variables represented in our regression.
 
-The categorical variable Political Ideology significantly impacts attitudes of support for our target variable. The finding displayed suggest that an alignment towards more conservative view, results in being less supportive to allow changes in the civil document for transgender individuals. It showed a 22.8% decrease of support for our target variables if the individual identified himself as conservative. Additionally, Religious affiliation further complicates the picture, as identifying as Catholic decrease the support for transgender by about 21,2%. In contrast, individuals identifying with the Jewish faith are slightly more supportive, thus, we need to take into consideration that in our data set the proportion of individuals identified as Jewish is really small in comparison to the Catholic faith individuals.
+The categorical variable political Ideology significantly impacts attitudes of support for our target variable. The findings suggest that an alignment towards a more conservative view, results in being less supportive to allow changes in the civil document for transgender individuals. It showed a 22.8% decrease of support for our target variables if the individual identified himself as conservative. Additionally, religious affiliation further complicates the picture, as identifying as Catholic decreases the support for the target variable by about 21,2%. In contrast, individuals identifying with the Jewish faith are slightly more supportive, but, we need to take into consideration that in our data set the proportion of individuals identified as Jewish is really small in comparison to the Catholic faith individuals.
 
-Concentrating now on the economic aspect, individuals who established that they have not had difficulties in paying the bill, are slightly more supportive of our dependent variables. Indicating that economic factors may intersect with views on rights and equality.
+Concentrating on the economic aspect, individuals who established that they had not had difficulties in paying the bill, are slightly more supportive of our dependent variables. Indicating that economic factors may intersect with views on rights and equality.
 
-For more of a social perception, individuals who responded that they lack connections with transgender individuals show a decreasing support for our dependent variable by 45.5%. The findings underscore the crucial importance of representation and visibility for the transgender community, as well as the development of personal relationships that foster understanding and empathy. These will most likely will increase the support for allowing transgender individuals to change their civil documents to match their inner gender identity.
+Furthermore, respondents without contact with transgender individuals show a decreasing support for our dependent variable by 45.5%. The findings underscore the crucial importance of representation and visibility for the transgender community, as well as the development of personal relationships that foster understanding and empathy. These will most likely increase the support for allowing transgender individuals to change their civil documents to match their inner gender identity.
 
-In conclusion, support for our dependent variables is influenced by several complex factors that interplay and shape individuals attitudes. Gender, age, political ideology, and religious affiliation are pivotal in transforming individual' s attitudes.More importantly, we want to point out that the significant impact of lacking personal connections with transgender individuals highlight the need for increased interpersonal connections and broader visibility of transgender issues. Paving the way for greater acceptance and legislative support in the progress of changing their legal documents, and thus, shifting societal norms and attitudes.
+To conclude, in this individual-level analysis, support for our dependent variables is influenced by several complex factors that interplay and shape individuals attitudes. Gender, age, political ideology, and religious affiliation are pivotal in transforming an individual's attitudes. More importantly, we want to point out that the significant impact of lacking personal connections with transgender individuals highlights the need for increased interpersonal connections and broader visibility of transgender issues. 
 
 ### Multi-level analysis
 
-In order to do a multi-leveled analysis we are going to take generalized linear mixed-effects model (GLMM). Where country_name will be the variable used as the random effects.
+In order to do a multi-leveled analysis we are going to take generalized linear mixed-effects model (GLMM), where country_name will be the variable used as the random effects.
 
 ```{r}
 Data <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
@@ -1316,7 +1312,7 @@ Data$Gdp_per_capita_log <- log(Data$Gdp_per_capita)
 
 ```
 
-First we check for multicolineality in the fixed effect variable
+First we check for multicollineality in the fixed effect variable.
 
 ```{r}
 test_model <- glm(binary_qc19 ~ male + d11 + political_ideology +
@@ -1329,7 +1325,7 @@ vif_values <- vif(test_model)
 print(vif_values)
 ```
 
-All variables are below 10, meaning that there is no evidence of multicolineality.
+All variables are below 10, meaning that there is no evidence of multicollineality.
 
 ```{r}
 glm_model_1 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
@@ -1350,7 +1346,7 @@ glm_model_2 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
 summary(glm_model_2)
 ```
 
-The model is clearly over fitted. And it suggests we have scaling issue.
+The model is clearly overfitted. And it suggests we have scaling issue.
 
 ```{r}
 Data$d11 <- scale(Data$d11, center = TRUE, scale = TRUE)
@@ -1405,7 +1401,7 @@ There's a large cluster of residuals around zero, which is not unexpected for bi
 **Q-Q plot for the standardized residuals**
 
 ```{r}
-library(lattice)
+
 qqmath(~ resid(glm_model_4, type = "pearson"), distribution = qnorm,
        main = "Q-Q Plot of Pearson Residuals", xlab = "Theoretical Quantiles", ylab = "Sample Quantiles")
 ```
@@ -1422,7 +1418,7 @@ Gender, has a significant negative coefficient indicating that on average, males
 
 **Ideology and Religion**
 
-There are categories in Political Ideology that are significant and have a negative impact on our dependent variables. This suggest that having a political_ideology more towards the right tends to decrease the support for our target variable.
+There are categories in Political Ideology that are significant and have a negative impact on our dependent variables. This suggest that having a political ideology more towards the right tends to decrease the support for our target variable.
 
 Moreover, Religion category levels are also significant in many cases. Indicating that religious affiliation is a factor that affect the support, specially we can observe that non-religious categories tend to be more supportive than more conservative religious categorizes.
 
@@ -1430,15 +1426,15 @@ Moreover, Religion category levels are also significant in many cases. Indicatin
 
 The variable sd1_7_factor that is related to answering the question on where they have a transgender acquaintances. The individuals who responded with an automatic Refusal tend to be the least supportive individuals towards our dependent variable. Highlighting the need for representation and personal connections in creating a supportive environment for transgender individuals' rights. It also indicates that familiarity with transgender individuals, perhaps through personal acquaintances, correlates with increased understanding and advocacy for the necessity to changes to official documents.
 
-The variable qc_15_1 shows that being in total disagreement that Gay, lesbian and bisexual people should have the same rights as heterosexual people, related to a extremely high non-supportive actitud towards agreeing that transgender individuals should be able to change their civil documents.
+Further, we find that not being part of a sexual minority is associated with an extremely high non-supportive attitude regarding the legal provision that transgender individuals should be able to change their civil documents.
 
 **Country Specific Variables**
 
-General support in a country for accepting that there should be a third gender option and agreeing that transgender discrimination is widespread in their own country indicate a really high supportive general attitude towards allowing transgender individuals to change their civil documents. Unemployment resulted significant and positive, suggesting that higher unemployment rates within a country might be associated with greater support for transgender rights, which could indicate a variety of social dynamics.
+Indicators on the general support in a country for supporting the possibility of a third gender indication and country-level awareness of discrimination against transgender individuals are strongly associated with higher supportive attitudes towards allowing transgender individuals to change their civil documents. Unemployment resulted significant and positive, suggesting that higher unemployment rates within a country might be associated with greater support for transgender rights, which could indicate a variety of social dynamics.
 
 In conclusion, the main reasons for cross-country differences in support levels for transgender individuals obtaining official documents appear to be related to demographic factors (gender and age), political and religious affiliations, social determinants, awareness regarding LGBTI issues, and economic conditions within a country.
 
-## PREDICTION
+### Prediction
 
 We want to create a model that is able to predict the support for transgender individuals changing civil documents. In order to be able to predict our target variable, we need to define the success that we want to predict.
 
@@ -1460,8 +1456,7 @@ ModelS = binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology + Religion_ca
 
 data_pred <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
 
-
-data_pred = data_pred %>%
+data_pred <- data_pred |> 
   filter(!is.na(binary_qc19))
 
 data_pred$prop_gndr_bin <- data_pred$prop_gndr_bin / 100
@@ -1482,38 +1477,22 @@ in_train <- in_train[, 1]
 training <- data_pred[in_train, ]
 testing <- data_pred[-in_train, ]
 
-
-
 #remove rows with NA's
 training <- na.omit(training)
 testing <- na.omit(testing)
-
 ```
 
-### Predicting using the logistic regression
+We adjust the dependent variable class.
 
 ```{r}
-logit.model = glm(ModelS , data = training, family = binomial)
+# defining the levels of our dependent variable
+training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
 
-summary(logit.model)
+testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
 ```
 
-```{r}
-ctrl <- trainControl(method = "cv") # 10-fold cross-validation number = 10) 
-significant_vars <- c()
 
-
-#use the testing data to predict the target variable
-probability <- predict(logit.model, newdata=testing, type='response')
-head(probability)
-
-prediction <- as.factor(ifelse(probability > 0.5, TRUE, FALSE))
-head(prediction)
-```
-
-With the output generated we can establish that the model predicts that in observation 6, there's a 78.25% probability that the outcome is TRUE for this observation. Which is a high probability and thus, indicating that there is a strong confidence in the outcome being TRUE. While probabilities significantly below 50% indicate a FALSE outcomes like observation 8. However, further analysis is needed using Machine Learning Methodology to find the best suttee predictive model for our data.
-
-### Predicting with Machine Learning
+### Setting the control function
 
 ```{r}
 ctrl <- trainControl(method = "repeatedcv", 
@@ -1521,13 +1500,35 @@ ctrl <- trainControl(method = "repeatedcv",
                      classProbs = T,
                      summaryFunction=twoClassSummary,
                      verboseIter = T)
-
-# defining the levels of our dependent variable
-training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
-
-testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
-
 ```
+
+### Predicting using the logistic regression
+
+```{r}
+logit.model <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology + Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal + prop_gndr_bin + prop_dis_wide + Unemployment + (1 | country_name),
+               data = training,
+               family = binomial, 
+               control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
+
+
+summary(logit.model)
+```
+```{r}
+#use the testing data to predict the target variable
+probability <- predict(logit.model, newdata=testing, type='response')
+
+logit_roc <- roc(testing$binary_qc19 ~ probability)
+
+# estimating best threshold balancing specificity and sensitiviy
+plot(logit_roc, col="red",print.thres=TRUE)
+
+prediction <- as.factor(ifelse(probability > 0.607, "Yes", "No"))
+
+confusionMatrix(prediction, testing$bin)
+```
+The above presented confusion matrix drawing on the best possible threshold defined by the ROC curve reports a 76.61% specificity rate and 73.35% sensitivity rate. This means that in 77% and 73% of the times, respectively, a new observation is correctly classified into the 'Yes' or 'No' class. As a whole, this statistical model reports an accuracy of 74.44%.
+
+### Predicting with Machine Learning
 
 ```{r}
 # we first need to correct the factor levels to be able to run the predictive model
@@ -1754,3 +1755,21 @@ plot(rocObj, print.auc = TRUE)
 ### Final Predictive model
 
 The predictive model for other countries chosen is the
+
+
+## LITERATURE
+
+Campbell, M., Hinton, J. D. X. & Anderson, J. R. (2019) A systematic review of the relationship between religion and attitudes toward transgender and gender-variant people. International Journal of Transgenderism, 20:1, 21-38, DOI: 10.1080/15532739.2018.1545149
+
+Earle, M. et al. (2020). A multilevel analysis of LGBT (Lesbian, Gay, Bisexual, Transgender) rights support across 77 countries: The role of contact and country laws . British Journal of Social Psychology. doi:10.1111/bjso.12436 
+
+Flores, A.  R. (2015) Attitudes toward transgender rights: perceived knowledge and secondary interpersonal contact, Politics, Groups, and Identities, 3:3, 398-416, DOI: 10.1080/21565503.2015.1050414
+
+Flores, A. R., Brown, T. N. T., & Park, A. S. (2016). Public Support for Transgender Rights: A Twenty-three Country Survey. The Williams Institute at UCLA School of Law. http://www.jstor.org/stable/resrep34965
+
+Harrison, B.F., Michelson, M.R. (2019) Gender, Masculinity Threat, and Support for Transgender Rights: An Experimental Study. Sex Roles 80, 63–75. https://doi.org/10.1007/s11199-018-0916-6
+Norton, A.T., Herek, G.M. Heterosexuals’ Attitudes Toward Transgender People: Findings from a National Probability Sample of U.S. Adults. Sex Roles 68, 738–753 (2013).
+
+Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", https://doi.org/10.7910/DVN/FXXLTS, Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== [fileUNF] 
+
+World Bank. (n.d.). DataBank: World Development Indicators [Economy & Growth]. Retrieved March 13, 2024, from https://databank.worldbank.org/source/world-development-indicators)
