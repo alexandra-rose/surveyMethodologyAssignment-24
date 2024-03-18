@@ -14,13 +14,14 @@ editor_options:
 ```{r}
 rm(list = ls())
 
+
 #setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
 ```{r}
 library(haven)
 library(readr)
-library(haven)
+library(haven) 
 library(writexl)
 library(sjlabelled)
 library(tidyverse)
@@ -42,9 +43,11 @@ library(caret)
 library(rpart)
 library(rpart.plot)
 library(lme4)
+library(pROC)
+library(caret)
+library(pdp)
 library(Matrix)
 library(lattice)
-library(pROC)
 ```
 
 ### Data
@@ -118,8 +121,6 @@ data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
 
 We believe that the data was missing some variables related to the legality aspect in a country level so we found this data.
 
-Citation: Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", <https://doi.org/10.7910/DVN/FXXLTS,> Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
-
 ```{r}
 Data_Extra_by_Country <- read_delim("data_extra_by_Country.csv", 
     delim = ";", escape_double = FALSE, trim_ws = TRUE)
@@ -156,11 +157,9 @@ merged_df_1 <- merge(data_cleaning_2, Data_Extra_by_Country, by = "country_name"
 
 **Economic Variables**
 
-The economic variables we choose were Unempoyment and GDP per capita.
+The economic variables we choose were Unemployment and GDP per capita.
 
 The data was attained from the World Bank.
-
-Citation: World Bank. (n.d.). DataBank: World Development Indicators \[Economy & Growth\]. Retrieved March 13, 2024, from <https://databank.worldbank.org/source/world-development-indicators>
 
 ```{r}
 Eco_Extra_Data <- read_delim("Eco Extra Data.csv", 
@@ -301,7 +300,7 @@ df_country_1 <-
   df_descriptive |>
   group_by(country_name) |> 
   summarize(
-    prop_gndr_bin = (sum(qc20_multinominal == "Yes") / n())*100, # Calculate proportion 
+    prop_gndr_bin = (sum(qc20_multinominal == "Yes") / n())*100, # Calculate proportion with high education
     prop_qc19_yes = (sum(qc19 == 1) / n())*100)
 
 
@@ -724,7 +723,6 @@ The correlation shows there is a very weak association in favor of the literatur
 We operationalize the respondent's current economic situation by a variable inquiring if, during the last twelve months, would the respondent would say they had difficulties to pay their bills at the end of the mont.
 
 ```{r}
-
 df_descriptive <- 
   df_descriptive |> 
   mutate(
@@ -892,7 +890,7 @@ df_plot <- na.omit(df_plot)
 ```{r}
 pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
 
-plot1 <- leaflet(df_plot) %>%
+plot <- leaflet(df_plot) %>%
   addProviderTiles(providers$CartoDB.Positron) %>%
   addPolygons(fillColor = ~pal(status),
               color = "black",
@@ -902,7 +900,7 @@ plot1 <- leaflet(df_plot) %>%
   addLegend(pal = pal, values = ~status,
             title = "Status",
             position = "bottomright")
-plot1
+plot
 ```
 
 **Association**
@@ -923,7 +921,6 @@ CrossTable(df_descriptive$adp_general, df_descriptive$qc19_multinominal,
            prop.chisq=F, 
            format="SPSS")
 ```
-
 
 ### Country-level economic variables (GDP per capita and unemployment)
 
@@ -1489,11 +1486,8 @@ We adjust the dependent variable class.
 training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
 
 testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
-```
-
 
 ### Setting the control function
-
 ```{r}
 ctrl <- trainControl(method = "repeatedcv", 
                      number = 10,
@@ -1610,7 +1604,6 @@ rpart.plot(dtFit, digits=4)
 **Prediction**
 
 ```{r}
-dtPred <- predict(dtFit, testing, type = "class")
 
 dtProb <- predict(dtFit, testing, type = "prob")
 
@@ -1619,7 +1612,7 @@ prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.5, "Yes", "No"))
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-We can observe an improvement in the model's accuracy, now at 75%. There's also a notable increase in sensitivity, which is currently at 63.29%, suggesting better detection of positive cases. Specificity remains nearly unchanged and is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
+We can observe an improvement in the model's accuracy, now at 74.99%. There's also a notable increase in sensitivity, which is currently at 63.29%, suggesting better detection of positive cases. Specificity remains nearly unchanged and is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
 
 ### Using Caret
 
@@ -1644,13 +1637,16 @@ Prediction
 ```{r}
 dtProb <- predict(caret.fit, testing, type = "prob")
 
-prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.5, "Yes", "No"))
+rocObj <- roc(response = testing$binary_qc19, predictor = dtProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+
+prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.583, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-The model has shown a slight improvement in both Accuracy and Specificity. However, there has been a slight decrease in Sensitivity. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is becoming marginally less effective at identifying positive cases.
+The model has shown a slight improvement in Accuracy, Specificity and Sensitivity. However, is still really unbalanced. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is less effective at identifying positive cases.
 
 ### Random Forest
 
@@ -1659,102 +1655,173 @@ rfFit <- train(ModelS,
                   data = training,
                   method = "rf",   
                   preProc=c('scale','center'),
-                  tuneLength = 10, 
+                  tuneGrid = data.frame(mtry = 5), # after runing a tuneLength=10 the results gave that the optimal parameter for this model is that.
                   metric="ROC",
-                  trControl = ctrl)
+                  trControl = ctrl) 
 
 ```
 
-```{r}
-plot(rfFit)
-```
-
-Looking at the plot, we can observe that there is a peak performance at 5 neighbors. This is where the ROC AUC score is the highest amount the tested values, suggesting that the optimal number of neighbors for our data set, based on the cross validation process is around this value.
+Looking at the plot, we can observe that there is a peak performance at 5 neighbors. This is where the ROC AUC score is the highest amount the tested values, suggesting that the optimal number of neighbors for our data set, based on the cross validation process is around this value. This is why the code was change to have a mtry=5 in order to run more rapid and not to take hours.
 
 ```{r}
 rfProb = predict(rfFit, testing, type="prob")
-prediction <- as.factor(ifelse(rfProb[,"Yes"] > 0.5, "Yes", "No"))
+
+rocObj <- roc(response = testing$binary_qc19, predictor = rfProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+
+prediction <- as.factor(ifelse(rfProb[,"Yes"] > 0.643, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-The model shows a slight improvement in both Accuracy, Specificity and Sensitivity. From the models we have seen so far, this is the best one.
+The model shows a slight decrease in Accuracy. Howewver, the balance for Specificity and Sensitivity has improved.
+
+#### `NOTE` As the last models where taking more than 8 hours to process, we decided to use Parallel Processing and a custom grid.
+
+```{r}
+library(doParallel)
+```
+
+```{r}
+numCores <- detectCores() - 1
+registerDoParallel(cores=numCores)
+
+```
+
+```{r}
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 10,
+                     repeats = 1,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary,
+                     verboseIter = FALSE,
+                     allowParallel = TRUE) # allowing for the parallel processing
+```
 
 ### Gradient boosting
 
 ```{r}
-ctrl <- trainControl(method = "repeatedcv", 
-                     number = 5,
-                     classProbs = T,
-                     summaryFunction=twoClassSummary,
-                     verboseIter = F)
+# custom grid to make the computational process run within less than 8 hours, we tune in each parameter and found this one where the optimal onces.
+tune_grid_gbm <- expand.grid(
+    nrounds = c(100, 600),  
+    max_depth = 4,          
+    eta = 0.05,     
+    gamma = 0,              
+    colsample_bytree = 0.8, 
+    min_child_weight = 1,   
+    subsample = 0.8         
+)
 
+set.seed(456)
+
+# Update the train function call to use the new tune grid
 gbmFit <- train(ModelS, 
-                  data = training,
-                  method = "xgbTree",   
-                  preProc=c('scale','center'),
-                  tuneLength = 20,
-                  metric="ROC",
-                  trControl = ctrl)
-
-plot(gbmFit)
+                data = training,
+                method = "xgbTree",
+                preProc = c('scale', 'center'),
+                tuneGrid = tune_grid_gbm,
+                metric = "ROC",
+                trControl = ctrl)
 ```
 
 ```{r}
+plot(gbmFit)
+```
 
+Going for more that 600 iterations made the model have a worst ROC.
+
+```{r}
 gbmProb = predict(gbmFit, testing, type="prob")
-prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.5, "Yes", "No"))
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+```
+
+```{r}
+prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.608, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-Interpretation
+This is the best model so far, with an Accuracy of 74.89%, Sensitivity of 74.70% and a Specificity of 75.01%
+
+Variables Importance 
 
 ```{r}
-# Assessing variable importance
 gbm_imp <- varImp(rfFit, scale = F)
 plot(gbm_imp, scales = list(y = list(cex = .95)))
 ```
 
+Partial dependence plot for the two most important variables
+
 ```{r}
-# Generate partial dependence plots for important variables
-partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
-partial(gbmFit, pred.var = "variable impo", plot = TRUE, rug = TRUE)
+partial(gbmFit, pred.var = "prop_gndr_bin", plot = TRUE, rug = TRUE)
+partial(gbmFit, pred.var = "d11", plot = TRUE, rug = TRUE)   
 ```
+
+For the gndr_bin plot, it shows that as the value of prop_gndr_bin increases, the predicted value (yhat) tends to decrease, meaning that there's a negative association between prop_gndr_bin and the predicted outcome.
+
+For the d11 plot, it shows a more complex, non-linear relationship. This is something we adressed by adding the quadratic age term.
+
+Both plot further evidence the insight we have gatherer throught this analisis.
+
+```{r}
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
+plot(rocObj, print.auc = TRUE)
+```
+
+The AUC value of 0.821 suggests that the Gradient Boosting model has a good measure of separability. Meaning that there is an 82.1% chance that the model is be able to distinguish between positive class (countries supporting the right of transgender individuals to change their civil documents) and negative class (countries not supporting). The curve is also close to the top left corner of the graph, which means that our model has a high sensitivity (it correctly identifies a high percentage of actual positives) and a high specificity (it correctly identifies a high percentage of actual negatives). In conclusion, the ROC curve indicates that the Gradient Boosting model performs well on our data set with a balance between sensitivity and specificity.
 
 ### Neural Networks
 
 ```{r}
+tune_grid_nn <- expand.grid(size = c(3,4), decay = 0.01) # various parameters were used but the best results suggested by the plot code are these values.
+set.seed(789)
 nn_tune <- train(ModelS, 
                  data = training,
                  method = "nnet",  
                  preProc = c('scale', 'center'),
-                 trControl = ctrl,
-                 tuneGrid = expand.grid(size = c(4, 2),  
-                                        decay = c(0.1, 0.01)),  
+                 tuneGrid = tune_grid_nn,
                  metric = "ROC",
-                 linout = FALSE)
-
-plot(nn_tune)
-
+                 trControl = ctrl,
+                 linout = FALSE,
+                 trace = FALSE)
 ```
+
+```{r}
+plot(nn_tune)
+```
+
+If we choose a value over 4, ROC decreases.
 
 ```{r}
 nnProb <- predict(nn_tune, testing, type = "prob")
-nnPredictedClass <- as.factor(ifelse(nnProb[,"Yes"] > 0.5, "Yes", "No"))
-confusionMatrix(nnPredictedClass, testing$binary_qc19)
+
 ```
 
 ```{r}
-library(pROC)
+rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+
+```
+
+```{r}
+nnPredictedClass <- as.factor(ifelse(nnProb[,"Yes"] > 0.629, "Yes", "No"))
+confusionMatrix(nnPredictedClass, testing$binary_qc19)
+```
+
+The Accuracy levels decrease to 73%, as well as, the Specificity to 75.24%. For the Sensitivity there is an improvement to 72%.
+
+```{r}
 rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
 plot(rocObj, print.auc = TRUE)
 ```
 
-### Final Predictive model
+This plot is further evidence that the best predictive model is the gradient boosting one. As it has a higher AUC, indicating a better overall performance in terms of distinguishing between the two classes of our dependent variable.
 
-The predictive model for other countries chosen is the
+### Final Predictive Model
+
+The selected predictive model for our international analysis is Gradient Boosting, which has consistently outperformed all other models in terms of accuracy. This model not only demonstrates the highest accuracy but also achieves the most balanced rates of specificity and sensitivity. Such a robust performance profile makes it the optimal choice for our data set. We found that this model is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents to reflect their gender identity.
 
 
 ## LITERATURE
@@ -1773,3 +1840,4 @@ Norton, A.T., Herek, G.M. Heterosexuals’ Attitudes Toward Transgender People: 
 Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", https://doi.org/10.7910/DVN/FXXLTS, Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== [fileUNF] 
 
 World Bank. (n.d.). DataBank: World Development Indicators [Economy & Growth]. Retrieved March 13, 2024, from https://databank.worldbank.org/source/world-development-indicators)
+
