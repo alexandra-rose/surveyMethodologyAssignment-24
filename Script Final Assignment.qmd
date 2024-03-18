@@ -968,7 +968,6 @@ print(kruskal_gdppc)
 
 In both cases, the p-values are less than the significance level of 0.05, we reject the null hypothesis of the Kruskal-Wallis test, which states that the group medians are equal. This results imply that the group medians are not all equal, and there is evidence of a difference among the groups defined by the our dependent variable.
 
-### MODELING
 
 ### Statistical modeling
 
