@@ -213,6 +213,7 @@ caption = "Source: Eurobarometer 91.4") +
 
 
 ```
+
 ### Binary conception of gender
 
 To operationalize the binary conception of gender we draw on the variable **'qc20'** for which respondents had to giver information about their believes regarding a third gender option on legal documents.
@@ -291,6 +292,7 @@ ggplot(aes(x = country_name, y = share_no)) +
 plot_binary_1
 plot_binary_2
 ```
+
 The plots show that this high convergence can also be seen on the country level, where countries in which the share of people opposing a third gender option almost mirrors that of the share who oppose more expanded transgender rights when ranked.
 
 To verify this association statistically, the Spearman rank test is used as the country-level proportions are not normally distributed. The Spearman rank test reports a very strong positive relationship between the two variables supporting the previous assertion that the acceptance of a third gender differentiates countries concerning their average approval of the civil document alteration for transgender people
@@ -325,9 +327,9 @@ CrossTable(df_descriptive$d1_ordinal, df_descriptive$qc19_multinominal,
 
 Upfront, it is important to note that 25% of respondents chose option 5, which represents the exact middle ground.
 
-Nonetheless there are surprising results. While the inherent idea is upheld that a greater share of more left-leaning people are in favor of transgender rights, the difference to very right-leaning people is not that great - 60% in favor - 30% against for left leaning individuals  vs. 43% in favor -45% against for right leaning individuals.
+Nonetheless there are surprising results. While the inherent idea is upheld that a greater share of more left-leaning people are in favor of transgender rights, the difference to very right-leaning people is not that great - 60% in favor - 30% against for left leaning individuals vs. 43% in favor -45% against for right leaning individuals.
 
-Of course, we have to consider common limitations of self-reporting left-right scales such as accuracy. Additionally, there is a significant amount of information  hidden in the 'non-response' and 'Don't know' groups of political ideology as they have greater 'Don't know' rates for our dependent variable.
+Of course, we have to consider common limitations of self-reporting left-right scales such as accuracy. Additionally, there is a significant amount of information hidden in the 'non-response' and 'Don't know' groups of political ideology as they have greater 'Don't know' rates for our dependent variable.
 
 All in all, we can still see a significant association, which, however, is maybe not as strong as suspected.
 
@@ -361,6 +363,7 @@ df_descriptive |>
   scale_y_continuous(labels = scales::percent_format(scale = 1)) +
   scale_fill_brewer(palette = "Dark2")
 ```
+
 ### Religiosity
 
 Moving on the religious affiliation, we had to recode the variable slightly due to low numbers for certain categories (see below).
@@ -405,7 +408,7 @@ df_descriptive |>
 
 Nonetheless, there are some general takeaways. Religiosity itself is not associated with lower levels of support for transgender rights, as Protestants as much as Atheists and Agnostics report high levels of support. Among Catholics, support is higher as well relatively, but it is less strong. Orthodox Christian present strong outlier with being strongly against transgender rights.
 
-Below we extrapolate this to the country level, showing that there is a high convergence of majoritarian Christian orthodox countries and the rejection of transgender rights. 
+Below we extrapolate this to the country level, showing that there is a high convergence of majoritarian Christian orthodox countries and the rejection of transgender rights.
 
 ```{r}
 df_descriptive |> 
@@ -450,8 +453,7 @@ CrossTable(df_descriptive$sd1_7_multinomial, df_descriptive$qc19_multinominal,
 
 Again the p-value is below 0.05 rendering the association statistically significant.
 
-First off, the majority of people did not have contact with a transgender person. 
-Nonetheless, there is a clear tendency on the individual level that among those that have not had contact with a transgender person the approval is relatively lower as for those who have had the margin is very clear (76% vs 18%). However, contact is associated rather with approval. Not having had contact is not associated with being predominantly against transgender rights, but rather is associated with lower approval rates.
+First off, the majority of people did not have contact with a transgender person. Nonetheless, there is a clear tendency on the individual level that among those that have not had contact with a transgender person the approval is relatively lower as for those who have had the margin is very clear (76% vs 18%). However, contact is associated rather with approval. Not having had contact is not associated with being predominantly against transgender rights, but rather is associated with lower approval rates.
 
 We visualize this below.
 
@@ -486,6 +488,7 @@ For age we use ANOVA to seek out differences between those who responded 'yes', 
 anova <- aov(d11 ~ qc19_multinominal, data = df_descriptive)
 summary(anova)
 ```
+
 The low p-value lets us reject the null hypothesis meaning there is a statistically significant difference between at least two groups.
 
 When visualizing group difference as below by using boxplots, we see that the most pronounced difference is between those saying 'yes' and those stating 'don't know'. With the latter group being older in comparison. This implies there is valuable information from particularly older people missing.
@@ -706,6 +709,7 @@ The ANOVA analysis supports the claim, as there are at least two groups statisti
 anova <- aov(d8 ~ qc19_multinominal, data = df_descriptive)
 summary(anova)
 ```
+
 ```{r}
 df_cor_age <- df_descriptive |> 
   select(qc19, d8) |> 
@@ -742,6 +746,7 @@ CrossTable(df_descriptive$d60_ordinal, df_descriptive$qc19_multinominal,
 Agains, we can reject the null hypothesis implying a statistically significant association. Following the literature, among those who never or almost never had difficulties to pay their bills at the end of the month, the support for the possibility of transgender people to alter their gender in their civic documents is markedly higher.
 
 This difference is visualized by the graph below:
+
 ```{r}
 df_descriptive|> 
   drop_na(d60_ordinal) |> 
@@ -825,6 +830,7 @@ CrossTable(df_descriptive$d25_multinominal, df_descriptive$qc19_multinominal,
            prop.chisq=F, 
            format="SPSS")
 ```
+
 Again, the association between the variables is statistically significant. We find that rural area respondents report a lower support and higher rejection than respondents from urban areas.
 
 However, as can be seen below, this difference is not very pronounced.
@@ -963,6 +969,7 @@ print(kruskal_gdppc)
 In both cases, the p-values are less than the significance level of 0.05, we reject the null hypothesis of the Kruskal-Wallis test, which states that the group medians are equal. This results imply that the group medians are not all equal, and there is evidence of a difference among the groups defined by the our dependent variable.
 
 ### PREDICTION
+
 ### Statistical modeling
 
 **Dependent Variable (qc19)**
@@ -1236,6 +1243,8 @@ Data_final_Ind <- Individual_data |>
 summary(is.na(Data_final_Ind))
 ```
 
+Upon examining our dataset, we have identified that the variable age_stopped_education is the numeric variable that has the largest number of NA's. Given its significance and the extent of missing information, we have opted to proceed with imputing these missing values.
+
 ```{r}
 library(mice)
 library(cowplot)
@@ -1250,28 +1259,27 @@ df_age <- data.frame(
   serialid = Data_final_Ind$serialid
 )
 
-methods <- c(age_stopped_education = "pmm", serialid = "")  
-
 # Imputation using PMM
+methods <- c(age_stopped_education = "pmm", serialid = "")  
 imputed_data_pmm <- mice(df_age, m = 5, method = methods, seed = 123)
 imputed_pmm <- complete(imputed_data_pmm, action = 1)$age_stopped_education
 
-# Change method to CART for age_stopped_education
+# using method CART for age_stopped_education
 methods["age_stopped_education"] <- "cart"
 imputed_data_cart <- mice(df_age, m = 5, method = methods, seed = 123)
 imputed_cart <- complete(imputed_data_cart, action = 1)$age_stopped_education
 
-# Change method to LASSO for age_stopped_education
+# using method LASSO for age_stopped_education
 methods["age_stopped_education"] <- "lasso.norm"
 imputed_data_lasso <- mice(df_age, m = 5, method = methods, seed = 123)
 imputed_lasso <- complete(imputed_data_lasso, action = 1)$age_stopped_education
 
-# Change method to RANDOMFOREST for age_stopped_education
+# using method RANDOMFOREST for age_stopped_education
 methods["age_stopped_education"] <- "rf"
 imputed_data_rf <- mice(df_age, m = 5, method = methods, seed = 123)
 imputed_rf <- complete(imputed_data_rf, action = 1)$age_stopped_education
 
-# Combine the original and imputed values into a single data frame for comparison
+
 mice_imputed <- data.frame(
   serialid = df_age$serialid,
   original = df_age$age_stopped_education,
@@ -1284,18 +1292,17 @@ mice_imputed <- data.frame(
 
 ```
 
+Plot for selecting the best imputation method
+
 ```{r}
-# Define variables, titles, and colors for the updated set of distributions
 variables <- c("original", "imputed_pmm", "imputed_cart", "imputed_lasso","imputed_rf")
 titles <- c("Original distribution", "PMM-imputed distribution", "Cart-imputed distribution", "Lasso-imputed distribution", "Random Forest Imputed Distribution")
 colors_fill <- c("#fa9fb5", "#67a9cf", "#807dba", "#fd8d3c","#74c476")
 colors_border <- c("#ae017e", "#02818a", "#54278f", "#e31a1c","#006d2c")
 
-# Initialize an empty plot list for the new plots
 plots <- list()
 
-# Loop through the updated variables to create plots
-# Loop through the updated variables to create plots with an adjusted binwidth
+
 for (i in 1:length(variables)) {
   plots[[i]] <- ggplot(mice_imputed, aes_string(x = variables[i])) +
     geom_histogram(binwidth = 3, fill = colors_fill[i], color = colors_border[i], position = "identity") +
@@ -1303,9 +1310,9 @@ for (i in 1:length(variables)) {
     theme_classic()
 }
 
-# Combine the new set of plots into a grid
 plot_grid(plotlist = plots, nrow = 3, ncol = 2)
 ```
+
 The best imputation method seem to be PMM-Imputed distribution
 
 ```{r}
@@ -1328,7 +1335,6 @@ any_na_in_dataset <- any(is.na(Data_final_Ind$age_stopped_education))
 print(any_na_in_dataset)
 ```
 
-
 ### Regression Analysis Individual Level
 
 ```{r}
@@ -1346,7 +1352,9 @@ logit_model <- glm(binary_qc19 ~ ., family=binomial(link='logit'), data= data_re
 
 summary(logit_model)
 ```
+
 There are several variables that are not significant. We also tried the regression with the categories of variables for age that we had and they were also not significant. We will now proceed to reduce the variables used.
+
 ```{r}
 logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology + Religion_cat + sd1_7_factor +   d60_ordinal + qc15_1_ordinal, 
                     family = binomial(link = "logit"), data = data_reg_ind)
@@ -1395,7 +1403,7 @@ Concentrating on the economic aspect, individuals who established that they had 
 
 Furthermore, respondents without contact with transgender individuals show a decreasing support for our dependent variable by 45.5%. The findings underscore the crucial importance of representation and visibility for the transgender community, as well as the development of personal relationships that foster understanding and empathy. These will most likely increase the support for allowing transgender individuals to change their civil documents to match their inner gender identity.
 
-To conclude, in this individual-level analysis, support for our dependent variables is influenced by several complex factors that interplay and shape individuals attitudes. Gender, age, political ideology, and religious affiliation are pivotal in transforming an individual's attitudes. More importantly, we want to point out that the significant impact of lacking personal connections with transgender individuals highlights the need for increased interpersonal connections and broader visibility of transgender issues. 
+To conclude, in this individual-level analysis, support for our dependent variables is influenced by several complex factors that interplay and shape individuals attitudes. Gender, age, political ideology, and religious affiliation are pivotal in transforming an individual's attitudes. More importantly, we want to point out that the significant impact of lacking personal connections with transgender individuals highlights the need for increased interpersonal connections and broader visibility of transgender issues.
 
 ### Multi-level analysis
 
@@ -1620,8 +1628,8 @@ prediction <- as.factor(ifelse(probability > 0.607, "Yes", "No"))
 
 confusionMatrix(prediction, testing$bin)
 ```
-The above presented confusion matrix drawing on the best possible threshold defined by the ROC curve reports a 76.61% specificity rate and 73.35% sensitivity rate. This means that in 77% and 73% of the times, respectively, a new observation is correctly classified into the 'Yes' or 'No' class. As a whole, this statistical model reports an accuracy of 74.44%.
 
+The above presented confusion matrix drawing on the best possible threshold defined by the ROC curve reports a 76.61% specificity rate and 73.35% sensitivity rate. This means that in 77% and 73% of the times, respectively, a new observation is correctly classified into the 'Yes' or 'No' class. As a whole, this statistical model reports an accuracy of 74.44%.
 
 ### Predicting with Machine Learning
 
@@ -1846,7 +1854,7 @@ confusionMatrix(prediction, testing$binary_qc19)
 
 This is the best model so far, with an Accuracy of 74.89%, Sensitivity of 74.70% and a Specificity of 75.01%
 
-Variables Importance 
+Variables Importance
 
 ```{r}
 gbm_imp <- varImp(rfFit, scale = F)
@@ -1924,21 +1932,18 @@ This plot is further evidence that the best predictive model is the gradient boo
 
 The selected predictive model for our international analysis is Gradient Boosting, which has consistently outperformed all other models in terms of accuracy. This model not only demonstrates the highest accuracy but also achieves the most balanced rates of specificity and sensitivity. Such a robust performance profile makes it the optimal choice for our data set. We found that this model is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents to reflect their gender identity.
 
-
 ## LITERATURE
 
 Campbell, M., Hinton, J. D. X. & Anderson, J. R. (2019) A systematic review of the relationship between religion and attitudes toward transgender and gender-variant people. International Journal of Transgenderism, 20:1, 21-38, DOI: 10.1080/15532739.2018.1545149
 
-Earle, M. et al. (2020). A multilevel analysis of LGBT (Lesbian, Gay, Bisexual, Transgender) rights support across 77 countries: The role of contact and country laws . British Journal of Social Psychology. doi:10.1111/bjso.12436 
+Earle, M. et al. (2020). A multilevel analysis of LGBT (Lesbian, Gay, Bisexual, Transgender) rights support across 77 countries: The role of contact and country laws . British Journal of Social Psychology. doi:10.1111/bjso.12436
 
-Flores, A.  R. (2015) Attitudes toward transgender rights: perceived knowledge and secondary interpersonal contact, Politics, Groups, and Identities, 3:3, 398-416, DOI: 10.1080/21565503.2015.1050414
+Flores, A. R. (2015) Attitudes toward transgender rights: perceived knowledge and secondary interpersonal contact, Politics, Groups, and Identities, 3:3, 398-416, DOI: 10.1080/21565503.2015.1050414
 
 Flores, A. R., Brown, T. N. T., & Park, A. S. (2016). Public Support for Transgender Rights: A Twenty-three Country Survey. The Williams Institute at UCLA School of Law. http://www.jstor.org/stable/resrep34965
 
-Harrison, B.F., Michelson, M.R. (2019) Gender, Masculinity Threat, and Support for Transgender Rights: An Experimental Study. Sex Roles 80, 63–75. https://doi.org/10.1007/s11199-018-0916-6
-Norton, A.T., Herek, G.M. Heterosexuals’ Attitudes Toward Transgender People: Findings from a National Probability Sample of U.S. Adults. Sex Roles 68, 738–753 (2013).
+Harrison, B.F., Michelson, M.R. (2019) Gender, Masculinity Threat, and Support for Transgender Rights: An Experimental Study. Sex Roles 80, 63–75. https://doi.org/10.1007/s11199-018-0916-6 Norton, A.T., Herek, G.M. Heterosexuals’ Attitudes Toward Transgender People: Findings from a National Probability Sample of U.S. Adults. Sex Roles 68, 738–753 (2013).
 
-Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", https://doi.org/10.7910/DVN/FXXLTS, Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== [fileUNF] 
+Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", https://doi.org/10.7910/DVN/FXXLTS, Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
 
-World Bank. (n.d.). DataBank: World Development Indicators [Economy & Growth]. Retrieved March 13, 2024, from https://databank.worldbank.org/source/world-development-indicators)
-
+World Bank. (n.d.). DataBank: World Development Indicators \[Economy & Growth\]. Retrieved March 13, 2024, from https://databank.worldbank.org/source/world-development-indicators)
