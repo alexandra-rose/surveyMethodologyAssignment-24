@@ -961,7 +961,6 @@ print(kruskal_gdppc)
 
 In both cases, the p-values are less than the significance level of 0.05, we reject the null hypothesis of the Kruskal-Wallis test, which states that the group medians are equal. This results imply that the group medians are not all equal, and there is evidence of a difference among the groups defined by the our dependent variable.
 
-### PREDICTION
 ### Statistical modeling
 
 **Dependent Variable (qc19)**
@@ -1229,6 +1228,102 @@ Data_final_Ind <- Individual_data |>
 
 ```
 
+### Imputation
+
+```{r}
+summary(is.na(Data_final_Ind))
+```
+
+```{r}
+library(mice)
+library(cowplot)
+library(missForest)
+
+```
+
+```{r}
+
+df_age <- data.frame(
+  age_stopped_education = Data_final_Ind$age_stopped_education,
+  serialid = Data_final_Ind$serialid
+)
+
+methods <- c(age_stopped_education = "pmm", serialid = "")  
+
+# Imputation using PMM
+imputed_data_pmm <- mice(df_age, m = 5, method = methods, seed = 123)
+imputed_pmm <- complete(imputed_data_pmm, action = 1)$age_stopped_education
+
+# Change method to CART for age_stopped_education
+methods["age_stopped_education"] <- "cart"
+imputed_data_cart <- mice(df_age, m = 5, method = methods, seed = 123)
+imputed_cart <- complete(imputed_data_cart, action = 1)$age_stopped_education
+
+# Change method to LASSO for age_stopped_education
+methods["age_stopped_education"] <- "lasso.norm"
+imputed_data_lasso <- mice(df_age, m = 5, method = methods, seed = 123)
+imputed_lasso <- complete(imputed_data_lasso, action = 1)$age_stopped_education
+
+# Change method to RANDOMFOREST for age_stopped_education
+methods["age_stopped_education"] <- "rf"
+imputed_data_rf <- mice(df_age, m = 5, method = methods, seed = 123)
+imputed_rf <- complete(imputed_data_rf, action = 1)$age_stopped_education
+
+# Combine the original and imputed values into a single data frame for comparison
+mice_imputed <- data.frame(
+  serialid = df_age$serialid,
+  original = df_age$age_stopped_education,
+  imputed_pmm = imputed_pmm,
+  imputed_cart = imputed_cart,
+  imputed_lasso = round(imputed_lasso),  
+  imputed_rf = imputed_rf  
+
+  )
+
+```
+
+```{r}
+# Define variables, titles, and colors for the updated set of distributions
+variables <- c("original", "imputed_pmm", "imputed_cart", "imputed_lasso","imputed_rf")
+titles <- c("Original distribution", "PMM-imputed distribution", "Cart-imputed distribution", "Lasso-imputed distribution", "Random Forest Imputed Distribution")
+colors_fill <- c("#fa9fb5", "#67a9cf", "#807dba", "#fd8d3c","#74c476")
+colors_border <- c("#ae017e", "#02818a", "#54278f", "#e31a1c","#006d2c")
+
+# Initialize an empty plot list for the new plots
+plots <- list()
+
+# Loop through the updated variables to create plots
+# Loop through the updated variables to create plots with an adjusted binwidth
+for (i in 1:length(variables)) {
+  plots[[i]] <- ggplot(mice_imputed, aes_string(x = variables[i])) +
+    geom_histogram(binwidth = 3, fill = colors_fill[i], color = colors_border[i], position = "identity") +
+    ggtitle(titles[i]) +
+    theme_classic()
+}
+
+# Combine the new set of plots into a grid
+plot_grid(plotlist = plots, nrow = 3, ncol = 2)
+```
+
+The best imputation method seem to be PMM-Imputed distribution
+
+```{r}
+Data_final_Ind <- Data_final_Ind %>%
+  left_join(mice_imputed %>% select(serialid, imputed_pmm), by = "serialid")
+```
+
+```{r}
+
+Data_final_Ind$age_stopped_education <- ifelse(a.na(Data_final_Ind$age_stopped_education), 
+                                               Data_final_Ind$imputed_pmm, 
+                                               Data_final_Ind$age_stopped_education)
+
+Data_final_Ind <- Data_final_Ind %>% select(-imputed_pmm)
+
+```
+
+
+
 ### Regression Analysis Individual Level
 
 ```{r}
@@ -1487,13 +1582,6 @@ training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = 
 
 testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
 
-### Setting the control function
-```{r}
-ctrl <- trainControl(method = "repeatedcv", 
-                     number = 10,
-                     classProbs = T,
-                     summaryFunction=twoClassSummary,
-                     verboseIter = T)
 ```
 
 ### Predicting using the logistic regression
@@ -1507,6 +1595,7 @@ logit.model <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology + 
 
 summary(logit.model)
 ```
+
 ```{r}
 #use the testing data to predict the target variable
 probability <- predict(logit.model, newdata=testing, type='response')
@@ -1546,6 +1635,14 @@ levels(testing$d60_ordinal) <- make.names(levels(testing$d60_ordinal), unique = 
 
 ```
 
+### Setting the control function
+```{r}
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 10,
+                     classProbs = T,
+                     summaryFunction=twoClassSummary,
+                     verboseIter = T)
+```
 ### Knn
 
 ```{r}
