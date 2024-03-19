@@ -781,7 +781,8 @@ ICC it gives a value that explains how good a model is at explaining the differe
 
 -   we didnt put it because, our assumption is that individual level variables also explain cross country differences because demographics are different across countries
 -   but because individual level variables
-# PREDICTION
+
+## PREDICTION
 
 We aim to build a model to predict support for transgender individuals to change legal documents.
 
@@ -890,26 +891,26 @@ rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
 plot(rocObj, col="red", print.thres = TRUE)
 prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.603, "Yes", "No"))
 ```
-# Gradient boosting
+## Gradient boosting
 
 ```{r}
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-# Variables Importance
+## Variables Importance
 
 ```{r}
 gbm_imp <- varImp(rfFit, scale = F)
 plot(gbm_imp, scales = list(y = list(cex = .95)))
 ```
 
-# Partial dependence plot
+## Partial dependence plot
 
 ```{r}
 partial(gbmFit, pred.var = "prop_gndr_bin", plot = TRUE, rug = TRUE)
 ```
 
-# ROC Curve
+## ROC Curve
 
 ```{r}
 rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
