@@ -781,3 +781,147 @@ ICC it gives a value that explains how good a model is at explaining the differe
 
 -   we didnt put it because, our assumption is that individual level variables also explain cross country differences because demographics are different across countries
 -   but because individual level variables
+# PREDICTION
+
+We aim to build a model to predict support for transgender individuals to change legal documents.
+
+`Model = binary_qc19 ~ male + d11 + I(d11^2) + political_ideology + Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal + Unemployment + prop_gndr_bin + prop_dis_wide`
+
+```{r}
+#| echo: false
+#| output: false
+
+ModelS = binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology + Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal + Unemployment + prop_gndr_bin + prop_dis_wide
+
+data_pred <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
+
+data_pred <- data_pred |> 
+  filter(!is.na(binary_qc19))
+
+data_pred$prop_gndr_bin <- data_pred$prop_gndr_bin / 100
+data_pred$prop_dis_wide <- data_pred$prop_dis_wide / 100
+set.seed(123)
+
+#we move to split the data into testing and training with a 80% split.
+
+in_train <- createDataPartition(y = data_pred$binary_qc19, p = 0.8, list = FALSE)
+
+in_train <- in_train[, 1]
+
+training <- data_pred[in_train, ]
+testing <- data_pred[-in_train, ]
+
+#remove rows with NA's
+training <- na.omit(training)
+testing <- na.omit(testing)
+# defining the levels of our dependent variable
+training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
+
+testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
+# we first need to correct the factor levels to be able to run the predictive model
+
+# For political_ideology
+levels(training$political_ideology) <- make.names(levels(training$political_ideology), unique = TRUE)
+levels(testing$political_ideology) <- make.names(levels(testing$political_ideology), unique = TRUE)
+# For Religion_cat
+levels(training$Religion_cat) <- make.names(levels(training$Religion_cat), unique = TRUE)
+levels(testing$Religion_cat) <- make.names(levels(testing$Religion_cat), unique = TRUE)
+# For sd1_7_factor
+levels(training$sd1_7_factor) <- make.names(levels(training$sd1_7_factor), unique = TRUE)
+levels(testing$sd1_7_factor) <- make.names(levels(testing$sd1_7_factor), unique = TRUE)
+# For qc15_1_ordinal
+levels(training$qc15_1_ordinal) <- make.names(levels(training$qc15_1_ordinal), unique = TRUE)
+levels(testing$qc15_1_ordinal) <- make.names(levels(testing$qc15_1_ordinal), unique = TRUE)
+# For d60_ordinal
+levels(training$d60_ordinal) <- make.names(levels(training$d60_ordinal), unique = TRUE)
+levels(testing$d60_ordinal) <- make.names(levels(testing$d60_ordinal), unique = TRUE)
+
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 10,
+                     classProbs = T,
+                     summaryFunction=twoClassSummary,
+                     verboseIter = T)
+set.seed(234)
+rfFit <- train(ModelS, 
+                  data = training,
+                  method = "rf",   
+                  preProc=c('scale','center'),
+                  tuneGrid = data.frame(mtry = 5), # after runing a tuneLength=10 the results gave that the optimal parameter for this model is that.
+                  metric="ROC",
+                  trControl = ctrl)
+
+library(doParallel)
+numCores <- detectCores() - 1
+registerDoParallel(cores=numCores)
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 10,
+                     repeats = 1,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary,
+                     verboseIter = FALSE,
+                     allowParallel = TRUE) # allowing for the parallel processing
+
+
+# custom grid to make the computational process run within less than 8 hours, we tune in each parameter and found this one where the optimal onces.
+tune_grid_gbm <- expand.grid(
+    nrounds = c(100, 600),  
+    max_depth = 4,          
+    eta = 0.05,     
+    gamma = 0,              
+    colsample_bytree = 0.8, 
+    min_child_weight = 1,   
+    subsample = 0.8         
+)
+ 
+
+set.seed(456)
+
+# Update the train function call to use the new tune grid
+gbmFit <- train(ModelS, 
+                data = training,
+                method = "xgbTree",
+                preProc = c('scale', 'center'),
+                tuneGrid = tune_grid_gbm,
+                metric = "ROC",
+                trControl = ctrl)
+
+gbmProb = predict(gbmFit, testing, type="prob")
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.603, "Yes", "No"))
+```
+# Gradient boosting
+
+```{r}
+confusionMatrix(prediction, testing$binary_qc19)
+```
+
+# Variables Importance
+
+```{r}
+gbm_imp <- varImp(rfFit, scale = F)
+plot(gbm_imp, scales = list(y = list(cex = .95)))
+```
+
+# Partial dependence plot
+
+```{r}
+partial(gbmFit, pred.var = "prop_gndr_bin", plot = TRUE, rug = TRUE)
+```
+
+# ROC Curve
+
+```{r}
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
+plot(rocObj, print.auc = TRUE)
+```
+ 
+## Final Predictive Model
+
+The selected predictive model for our international analysis is Gradient Boosting (GB).
+
+GB not only has one of the highest Accuracy levels but also achieves the most balanced rates of Specificity and Sensitivity. Such a robust performance profile makes it the optimal choice for our data set.
+
+We found that this model, is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents.
+
+# THANK YOU!
