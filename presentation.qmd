@@ -586,7 +586,6 @@ CrossTable(df_descriptive$adp_general, df_descriptive$qc19_multinominal,
 ```
 :::
 
-
 ## Statistical Modeling
 
 **Dependent Variable (qc19)**
@@ -1129,7 +1128,7 @@ ICC it gives a value that explains how good a model is at explaining the differe
 -   we didnt put it because, our assumption is that individual level variables also explain cross country differences because demographics are different across countries
 -   but because individual level variables
 
-## PREDICTION
+## Prediction
 
 We aim to build a model to predict support for transgender individuals to change legal documents.
 
@@ -1238,6 +1237,7 @@ rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
 plot(rocObj, col="red", print.thres = TRUE)
 prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.603, "Yes", "No"))
 ```
+
 ## Gradient boosting
 
 ```{r}
@@ -1263,7 +1263,7 @@ partial(gbmFit, pred.var = "prop_gndr_bin", plot = TRUE, rug = TRUE)
 rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
 plot(rocObj, print.auc = TRUE)
 ```
- 
+
 ## Final Predictive Model
 
 The selected predictive model for our international analysis is Gradient Boosting (GB).
