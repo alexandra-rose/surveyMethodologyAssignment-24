@@ -1627,7 +1627,7 @@ prediction <- as.factor(ifelse(probability > 0.614, "Yes", "No"))
 confusionMatrix(prediction, testing$bin)
 ```
 
-The above presented confusion matrix drawing on the best possible threshold defined by the ROC curve reports a 76.75% specificity rate and 72.99% sensitivity rate. This means that in 77% and 73% of the times, respectively, a new observation is correctly classified into the 'Yes' or 'No' class. As a whole, this statistical model reports an accuracy of 75.29%.
+The above presented confusion matrix drawing on the best possible threshold defined by the ROC curve reports a 76.07% specificity rate and 73.81% sensitivity rate. This means that in 76% and 74% of the times, respectively, a new observation is correctly classified into the 'Yes' or 'No' class. As a whole, this statistical model reports an accuracy of 75.2%.
 
 ### Predicting with Machine Learning
 
@@ -1719,6 +1719,7 @@ rpart.plot(dtFit, digits=4)
 -   the percentage of observations in the node
 
 **Interpretation of one path:** For individuals who 'Tend to disagree,' 'Totally disagree,' or 'Don’t know' with qc15_1_ordinal, and who have a prop_gndr_bin value less than 0.002448, if they also have a prop_dis_wide value greater than or equal to 0.002342. This particular path leads to a leaf node that predicts 'Yes.' In this node, the proportion of observations from the data set that result in a 'Yes' prediction is 5.16%, with a probability score of 0.5872 (58.72%) for this prediction.
+
 
 **Prediction**
 
