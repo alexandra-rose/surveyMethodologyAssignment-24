@@ -968,8 +968,6 @@ print(kruskal_gdppc)
 
 In both cases, the p-values are less than the significance level of 0.05, we reject the null hypothesis of the Kruskal-Wallis test, which states that the group medians are equal. This results imply that the group medians are not all equal, and there is evidence of a difference among the groups defined by the our dependent variable.
 
-### PREDICTION
-
 ### Statistical modeling
 
 **Dependent Variable (qc19)**
@@ -1331,7 +1329,6 @@ Data_final_Ind <- Data_final_Ind %>% select(-imputed_pmm)
 
 ```
 
-
 ### Regression Analysis Individual Level
 
 ```{r}
@@ -1536,7 +1533,7 @@ Indicators on the general support in a country for supporting the possibility of
 
 In conclusion, the main reasons for cross-country differences in support levels for transgender individuals obtaining official documents appear to be related to demographic factors (gender and age), political and religious affiliations, social determinants, awareness regarding LGBTI issues, and economic conditions within a country.
 
-### Prediction
+## PREDICTION
 
 We want to create a model that is able to predict the support for transgender individuals changing civil documents. In order to be able to predict our target variable, we need to define the success that we want to predict.
 
@@ -1592,17 +1589,6 @@ training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = 
 
 testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
 ```
-### Setting the control function
-
-
-```{r}
-
-ctrl <- trainControl(method = "repeatedcv", 
-                     number = 10,
-                     classProbs = T,
-                     summaryFunction=twoClassSummary,
-                     verboseIter = T)
-```
 
 ### Predicting using the logistic regression
 
@@ -1632,7 +1618,6 @@ confusionMatrix(prediction, testing$bin)
 
 The above presented confusion matrix drawing on the best possible threshold defined by the ROC curve reports a 76.61% specificity rate and 73.35% sensitivity rate. This means that in 77% and 73% of the times, respectively, a new observation is correctly classified into the 'Yes' or 'No' class. As a whole, this statistical model reports an accuracy of 74.44%.
 
-
 ### Predicting with Machine Learning
 
 ```{r}
@@ -1658,6 +1643,7 @@ levels(testing$d60_ordinal) <- make.names(levels(testing$d60_ordinal), unique = 
 ```
 
 ### Setting the control function
+
 ```{r}
 ctrl <- trainControl(method = "repeatedcv", 
                      number = 10,
@@ -1665,6 +1651,7 @@ ctrl <- trainControl(method = "repeatedcv",
                      summaryFunction=twoClassSummary,
                      verboseIter = T)
 ```
+
 ### Knn
 
 ```{r}
