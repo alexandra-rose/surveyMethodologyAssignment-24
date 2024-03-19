@@ -1718,7 +1718,7 @@ rpart.plot(dtFit, digits=4)
 -   the predicted probability of each class
 -   the percentage of observations in the node
 
-**Interpretation of one path:** For individuals who tend to agree or totally agree with qc15_1_ordinal, and who have a prop_gndr_bin value lower than 0.002448, if they also have a prop_dis_wide bigger than 0.002342. This particular path leads to a leaf where 5.16% of the observations within this branch result in a 'Yes' prediction.
+**Interpretation of one path:** For individuals who 'Tend to disagree,' 'Totally disagree,' or 'Don’t know' with qc15_1_ordinal, and who have a prop_gndr_bin value less than 0.002448, if they also have a prop_dis_wide value greater than or equal to 0.002342. This particular path leads to a leaf node that predicts 'Yes.' In this node, the proportion of observations from the data set that result in a 'Yes' prediction is 5.16%, with a probability score of 0.5872 (58.72%) for this prediction.
 
 **Prediction**
 
