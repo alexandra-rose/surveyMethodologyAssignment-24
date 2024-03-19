@@ -6,7 +6,7 @@ editor: visual
 
 ## Survey Research Methodology Assignment
 
-Sofia Villamil, Frederick and Alexandra Salo, 2024
+Frederick Peña, Alexandra Salo and Sofia Villamil, 2024
 
 In this assignment we seek to explaining Cross-Country Differences in support for transgender individuals obtaining official documents (cq19 in the questionnare) and then to continue and create a predictive model to predict the support levels of other countries.
 
