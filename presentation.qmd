@@ -134,15 +134,102 @@ head(merged_df)
 
 ```
 
-
 ## Choosing the variables to build our models
 
 -   based off of literature found
 
-    -   show citations
+    -   Campbell, M., Hinton, J. D. X. & Anderson, J. R. (2019) A systematic review of the relationship between religion and attitudes toward transgender and gender-variant people. International Journal of Transgenderism, 20:1, 21-38, DOI: 10.1080/15532739.2018.1545149
+    -   Earle, M. et al. (2021). A multilevel analysis of LGBT (Lesbian, Gay, Bisexual, Transgender) rights support across 77 countries: The role of contact and country laws . British Journal of Social Psychology. doi:10.1111/bjso.12436
 
+## 
+
+-   based off of literature found
+
+    -   Flores, A. R. (2015) Attitudes toward transgender rights: perceived knowledge and secondary interpersonal contact, Politics, Groups, and Identities, 3:3, 398-416, DOI: 10.1080/21565503.2015.1050414-
+
+    -   Flores, A. R., Brown, T. N. T., & Park, A. S. (2016). Public Support for Transgender Rights: A Twenty-three Country Survey. The Williams Institute at UCLA School of Law. <http://www.jstor.org/stable/resrep34965->
+
+    -   Harrison, B.F., Michelson, M.R. (2019) Gender, Masculinity Threat, and Support for Transgender Rights: An Experimental Study. Sex Roles 80, 63–75. <https://doi.org/10.1007/s11199-018-0916-6>
+
+## 
+
+-   based off of literature found
+
+    -   Norton, A.T., Herek, G.M. (2013) Heterosexuals’ Attitudes Toward Transgender People: Findings from a National Probability Sample of U.S. Adults. Sex Roles 68, 738–753.-
+    -   Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", <https://doi.org/10.7910/DVN/FXXLTS,> Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
+
+```{=html}
+<!-- -->
+```
 -   we added country level variables; legal rights of trans individuals variable and benchmark economic variables
 
--   associative tests to confirm literature and narrow down the variables to X
+## 
 
-    -   give one example in code
+-   we conduct associative tests to confirm literature and narrow down the variables to X
+
+```{r}
+#| echo: false
+
+df_descriptive <-
+  df_descriptive |> 
+  mutate(sd3_cat = case_when(sd3 == 1 ~ "Catholic",
+                             sd3 == 2 ~ "Orthodox Christian",
+                             sd3 == 3 ~ "Protestant",
+                             sd3 == 4 ~ "Other Christian",
+                             sd3 == 5 ~ "Jewish",
+                             sd3 < 9 ~ "Muslim", 
+                             sd3 < 12 ~ "Other",
+                             sd3 < 14 ~ "Atheist | Agnostic",
+                             sd3 == 14 ~ "Other",
+                             sd3 > 14 ~ "Don't know | Refusal")) 
+
+
+```
+
+```{r Example of descriptives done}
+#| echo: true
+CrossTable(df_descriptive$sd3_cat, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+## 
+
+```{r}
+df_descriptive |> 
+  mutate(sd3_cat = fct_relevel(sd3_cat, "Don't know | Refusal", after = Inf)) |> 
+  ggplot(aes(x = sd3_cat)) +
+  geom_bar(fill = "black", color = "black", alpha = 0.5) +
+  labs(title = "Frequency by religious affiliation",
+       x = "",
+       y = "Absolutec count",
+       caption = "Source: Eurobarometer 91.4") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
+```
+
+## 
+
+```{r}
+df_descriptive |> 
+  group_by(country_name) |> 
+  summarise(share = mean(sd3_cat == "Orthodox Christian", na.rm = TRUE)*100) |> 
+  arrange(desc(share)) |> 
+  mutate(country_name = factor(country_name, levels = country_name)) |>
+  filter(country_name != "Otros países") |> 
+ggplot(aes(x = country_name, y = share)) +
+  geom_col(fill = "red") +
+  labs(title = "Share of Orthodox Christians", 
+       x = "",
+       y = "",
+       caption = "Source: Eurobarometer 91.4") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.margin = margin(0, 0, 0, 0))  +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_text((aes(label = sprintf("%.1f%%", share))),vjust = -0.5, size = 2)
+```

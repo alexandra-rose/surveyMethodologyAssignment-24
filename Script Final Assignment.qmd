@@ -173,7 +173,7 @@ merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRU
 
 In this section, we will try to reveal predictors of support or lack thereof for transgender rights, specifically the ability to change civic documents. During this step, we will oscillate between individual-level and country-level analyses, developing our thoughts based on a previous literature review during which we identified key predictors explaining support of transgender rights. (see Campbell et al., 2019; Earl et al., 2020; Flores, 2015; Flores et al., 2016; Harrison and Michelson, 2019; Norton and Herek, 2013)
 
-## Descriptive Analysis 
+## Descriptive Analysis
 
 ### Gender
 
@@ -973,7 +973,7 @@ In both cases, the p-values are less than the significance level of 0.05, we rej
 
 In this section, we investigated predictors we inferred from the literature and drew conclusion from both the individual and country level.
 
-As such, we present both demographic (e.g. attitudes or share of minorities) and country level characteristics. From the demographic variables we inferred three country-level variables. All three variables pertain to the idea of measuring the general societal sentiment towards attitudes closely tied to the support of transgender rights. These sentiments include attitudes on the binary conception of gender, support for LGB rights and general awareness levels of discrimination against the transgender community. These sentiments foster a societal context shaping what is socially acceptable. We therefore, considered these variables more important than more abstract operationalizations of the discourse space, such as government characteristics. Moreover, we include legal characteristics which portray more accurately government policy which in turn influence support levels. We find all these variables to be statistical significantly associated with the support for transgender rights. 
+As such, we present both demographic (e.g. attitudes or share of minorities) and country level characteristics. From the demographic variables we inferred three country-level variables. All three variables pertain to the idea of measuring the general societal sentiment towards attitudes closely tied to the support of transgender rights. These sentiments include attitudes on the binary conception of gender, support for LGB rights and general awareness levels of discrimination against the transgender community. These sentiments foster a societal context shaping what is socially acceptable. We therefore, considered these variables more important than more abstract operationalizations of the discourse space, such as government characteristics. Moreover, we include legal characteristics which portray more accurately government policy which in turn influence support levels. We find all these variables to be statistical significantly associated with the support for transgender rights.
 
 Aside from these variables - concerning demographic characteristics - we find significant effects of gender, political ideology, religious affiliation, contact with transgender individuals, age, pertaining to a sexual minority, education level, individual economic situation and the place of residence. As such, we confirm large parts of the literature on acceptance of transgender rights.
 
