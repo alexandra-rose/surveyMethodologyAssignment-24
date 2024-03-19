@@ -1,7 +1,7 @@
 ---
 title: "Group presentation"
 date: 2024-01-24
-author: "Frederick, Nienke, Mika, Alex, Alicia"
+author: "Frederick, Sofia, Alex"
 format: 
   revealjs:
     theme: simple
@@ -13,6 +13,136 @@ editor: visual
 logo: https://www.rstudio.com/wp-content/uploads/2018/10/RStudio-Logo-Flat.png
 ---
 
-Cleaning the data
+## Data cleaning
 
-Choosing the variables to build our models
+-   Cleaning data
+
+-   Tidy data
+
+-   Joining datasets
+
+```{r Data cleaning}
+#| echo: false
+library(haven)
+library(readr)
+library(haven) 
+library(writexl)
+library(sjlabelled)
+library(tidyverse)
+library(corrplot)
+library(dplyr)
+library(gmodels)
+library(scales)
+library(rnaturalearth)
+library(rnaturalearthdata)
+library(sf)
+library(ggplot2)
+library(leaflet)
+library(tidyverse)
+library(MASS)
+library(caret)
+library(plotly)
+library(car)
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(lme4)
+library(pROC)
+library(caret)
+library(pdp)
+library(Matrix)
+library(lattice)
+
+
+data <- read_dta("Data/ZA7575.dta")
+
+data_cleaning_1 <- data %>%
+  select(
+         -c(studyno1, studyno2, doi, version, edition,survey))
+
+data_cleaning_2 <- data_cleaning_1 %>% 
+  select(serialid, everything())
+
+# creating a variable for country name to be more organized
+data_cleaning_2$country_name <- NA
+data_cleaning_2$country_name[data_cleaning_2$q1_1 == 1] <- 'Belgium'
+data_cleaning_2$country_name[data_cleaning_2$q1_2 == 1] <- 'Denmark'
+data_cleaning_2$country_name[data_cleaning_2$q1_3 == 1] <- 'Germany'
+data_cleaning_2$country_name[data_cleaning_2$q1_4 == 1] <- 'Greece'
+data_cleaning_2$country_name[data_cleaning_2$q1_5 == 1] <- 'Spain'
+data_cleaning_2$country_name[data_cleaning_2$q1_6 == 1] <- 'France'
+data_cleaning_2$country_name[data_cleaning_2$q1_7 == 1] <- 'Ireland'
+data_cleaning_2$country_name[data_cleaning_2$q1_8 == 1] <- 'Italy'
+data_cleaning_2$country_name[data_cleaning_2$q1_9 == 1] <- 'Luxembourg'
+data_cleaning_2$country_name[data_cleaning_2$q1_10 == 1] <- 'Netherlands'
+data_cleaning_2$country_name[data_cleaning_2$q1_11 == 1] <- 'Portugal'
+data_cleaning_2$country_name[data_cleaning_2$q1_12 == 1] <- 'United Kingdom'
+data_cleaning_2$country_name[data_cleaning_2$q1_13 == 1] <- 'Austria'
+data_cleaning_2$country_name[data_cleaning_2$q1_14 == 1] <- 'Sweden'
+data_cleaning_2$country_name[data_cleaning_2$q1_15 == 1] <- 'Finland'
+data_cleaning_2$country_name[data_cleaning_2$q1_16 == 1] <- 'Cyprus'
+data_cleaning_2$country_name[data_cleaning_2$q1_17 == 1] <- 'Czech Republic'
+data_cleaning_2$country_name[data_cleaning_2$q1_18 == 1] <- 'Estonia'
+data_cleaning_2$country_name[data_cleaning_2$q1_19 == 1] <- 'Hungary'
+data_cleaning_2$country_name[data_cleaning_2$q1_20 == 1] <- 'Latvia'
+data_cleaning_2$country_name[data_cleaning_2$q1_21 == 1] <- 'Lithuania'
+data_cleaning_2$country_name[data_cleaning_2$q1_22 == 1] <- 'Malta'
+data_cleaning_2$country_name[data_cleaning_2$q1_23 == 1] <- 'Poland'
+data_cleaning_2$country_name[data_cleaning_2$q1_24 == 1] <- 'Slovakia'
+data_cleaning_2$country_name[data_cleaning_2$q1_25 == 1] <- 'Slovenia'
+data_cleaning_2$country_name[data_cleaning_2$q1_26 == 1] <- 'Bulgaria'
+data_cleaning_2$country_name[data_cleaning_2$q1_27 == 1] <- 'Romania'
+data_cleaning_2$country_name[data_cleaning_2$q1_28 == 1] <- 'Croatia'
+data_cleaning_2$country_name[data_cleaning_2$q1_29 == 1] <- 'Other countries'
+data_cleaning_2$country_name[data_cleaning_2$q1_30 == 1] <- 'DK'
+
+# factor
+data_cleaning_2$country_name <- factor(data_cleaning_2$country_name)
+
+Data_Extra_by_Country <- read_delim("data_extra_by_Country.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE)
+
+all_na_columns <- sapply(Data_Extra_by_Country, function(x) all(is.na(x)))
+
+# There are columns with all NA due to the filtering in stata done before for the year 2019.
+
+columns_to_remove <- names(Data_Extra_by_Country)[all_na_columns]
+
+# remove the columns
+Data_Extra_by_Country <- Data_Extra_by_Country[, !all_na_columns]
+Data_Extra_by_Country <- Data_Extra_by_Country[, !names(Data_Extra_by_Country) %in% "e_polity2"]
+
+# dataframe of all the variables for 2019 related to legal or political views of most of the countries in the world
+
+Data_Extra_by_Country$country_name <- factor(Data_Extra_by_Country$country_name)
+
+Data_Extra_by_Country <- Data_Extra_by_Country %>% 
+  select(country_name,adp_general)
+
+merged_df_1 <- merge(data_cleaning_2, Data_Extra_by_Country, by = "country_name", all.x = TRUE)
+
+Eco_Extra_Data <- read_delim("Eco Extra Data.csv", 
+    delim = ";", escape_double = FALSE, trim_ws = TRUE) 
+
+merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRUE)
+```
+
+```{r Clean Data to show}
+#| echo: true
+
+head(merged_df)
+
+```
+
+
+## Choosing the variables to build our models
+
+-   based off of literature found
+
+    -   show citations
+
+-   we added country level variables; legal rights of trans individuals variable and benchmark economic variables
+
+-   associative tests to confirm literature and narrow down the variables to X
+
+    -   give one example in code
