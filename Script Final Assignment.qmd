@@ -14,8 +14,6 @@ editor_options:
 ```{r}
 rm(list = ls())
 
-
-#setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
 ```{r, results='hide'}
@@ -1558,7 +1556,7 @@ prop_table_yes_no <- prop.table(table(factor(Data_final_Ind$binary_qc19, levels 
 prop_table_yes_no
 ```
 
-We see that the data is balanced in our favor below, there are more Yes than there are No's, this is important as it will be easier for us to predict the Yes than the No's. We need to find the factors that are causing this 60% of support for our dependent variable.
+We see that the data is balanced in our favor. This is important as it will be easier for us to predict the Yes than the No's. We need to find the factors that are causing this 60% of support for our dependent variable.
 
 The model we are going to use and the data.
 
@@ -1624,12 +1622,12 @@ logit_roc <- roc(testing$binary_qc19 ~ probability)
 # estimating best threshold balancing specificity and sensitiviy
 plot(logit_roc, col="red",print.thres=TRUE)
 
-prediction <- as.factor(ifelse(probability > 0.607, "Yes", "No"))
+prediction <- as.factor(ifelse(probability > 0.614, "Yes", "No"))
 
 confusionMatrix(prediction, testing$bin)
 ```
 
-The above presented confusion matrix drawing on the best possible threshold defined by the ROC curve reports a 76.61% specificity rate and 73.35% sensitivity rate. This means that in 77% and 73% of the times, respectively, a new observation is correctly classified into the 'Yes' or 'No' class. As a whole, this statistical model reports an accuracy of 74.44%.
+The above presented confusion matrix drawing on the best possible threshold defined by the ROC curve reports a 76.75% specificity rate and 72.99% sensitivity rate. This means that in 77% and 73% of the times, respectively, a new observation is correctly classified into the 'Yes' or 'No' class. As a whole, this statistical model reports an accuracy of 75.29%.
 
 ### Predicting with Machine Learning
 
@@ -1691,7 +1689,7 @@ confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-The model has an accuracy of 73.81%, suggesting that a relatively high proportion of predictions are correct. The sensitivity of 61% indicates that the model has moderate effectiveness in identifying positive cases, while the specificity of 82.01% shows a stronger performance in predicting negative cases. This may suggest a tendency towards predicting negative outcomes more accurately, which could be reflective of class distribution biases within the data set. Further analysis using other models is necessary to improve the balance and overall predictive performance.
+The model has an accuracy of 74.14%, suggesting that a relatively high proportion of predictions are correct. The sensitivity of 60.72% indicates that the model has moderate effectiveness in identifying positive cases, while the specificity of 82.63% shows a stronger performance in predicting negative cases. This may suggest a tendency towards predicting negative outcomes more accurately, which could be reflective of class distribution biases within the data set. Further analysis using other models is necessary to improve the balance and overall predictive performance.
 
 ### Decision trees
 
@@ -1720,7 +1718,7 @@ rpart.plot(dtFit, digits=4)
 -   the predicted probability of each class
 -   the percentage of observations in the node
 
-**Interpretation of one path:** For individuals who tend to agree or totally agree with qc15_1_ordinal, and who have a prop_gndr_bin value higher than 0.002947, if they also identify their Religion_cat as Muslim or Orthodox Christian, the decision tree classifies them as 'Yes'. This particular path leads to a leaf where 56.40% of the observations within this branch result in a 'Yes' prediction.
+**Interpretation of one path:** For individuals who tend to agree or totally agree with qc15_1_ordinal, and who have a prop_gndr_bin value lower than 0.002448, if they also have a prop_dis_wide bigger than 0.002342. This particular path leads to a leaf where 5.16% of the observations within this branch result in a 'Yes' prediction.
 
 **Prediction**
 
@@ -1733,7 +1731,7 @@ prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.5, "Yes", "No"))
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-We can observe an improvement in the model's accuracy, now at 74.99%. There's also a notable increase in sensitivity, which is currently at 63.29%, suggesting better detection of positive cases. Specificity remains nearly unchanged and is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
+We can observe an improvement in the model's accuracy, now at 75.29%. There's also a notable increase in sensitivity, which is currently at 62.68%, suggesting better detection of positive cases. Specificity is 83% and is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
 
 ### Using Caret
 
@@ -1763,13 +1761,13 @@ dtProb <- predict(caret.fit, testing, type = "prob")
 rocObj <- roc(response = testing$binary_qc19, predictor = dtProb[,"Yes"])
 plot(rocObj, col="red", print.thres = TRUE)
 
-prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.583, "Yes", "No"))
+prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.612, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-The model has shown a slight improvement in Accuracy, Specificity and Sensitivity. However, is still really unbalanced. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is less effective at identifying positive cases.
+The model has shown a no improvement in Accuracy, Specificity and Sensitivity. However, is still really unbalanced. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is less effective at identifying positive cases.
 
 ### Random Forest
 
@@ -1793,12 +1791,12 @@ rfProb = predict(rfFit, testing, type="prob")
 rocObj <- roc(response = testing$binary_qc19, predictor = rfProb[,"Yes"])
 plot(rocObj, col="red", print.thres = TRUE)
 
-prediction <- as.factor(ifelse(rfProb[,"Yes"] > 0.643, "Yes", "No"))
+prediction <- as.factor(ifelse(rfProb[,"Yes"] > 0.603, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-The model shows a slight decrease in Accuracy. Howewver, the balance for Specificity and Sensitivity has improved.
+The model shows a slight decrease in Accuracy. However, the balance for Specificity and Sensitivity has improved.
 
 `NOTE` As the last models where taking more than 8 hours to process, we decided to use Parallel Processing and a custom grid.
 
@@ -1861,13 +1859,13 @@ plot(rocObj, col="red", print.thres = TRUE)
 ```
 
 ```{r}
-prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.608, "Yes", "No"))
+prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.603, "Yes", "No"))
 
 confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-This is the best model so far, with an Accuracy of 74.89%, Sensitivity of 74.70% and a Specificity of 75.01%
+This is the best model so far, with an Accuracy of 75.07%, Sensitivity of 74.64% and a Specificity of 75.35%
 
 Variables Importance
 
@@ -1885,16 +1883,16 @@ partial(gbmFit, pred.var = "d11", plot = TRUE, rug = TRUE)
 
 For the gndr_bin plot, it shows that as the value of prop_gndr_bin increases, the predicted value (yhat) tends to decrease, meaning that there's a negative association between prop_gndr_bin and the predicted outcome.
 
-For the d11 plot, it shows a more complex, non-linear relationship. This is something we adressed by adding the quadratic age term.
+For the d11 plot, it shows a more complex, non-linear relationship. This is something we address by adding the quadratic age term.
 
-Both plot further evidence the insight we have gatherer throught this analisis.
+Both plot further evidence the insight we have gatherer through this analysis.
 
 ```{r}
 rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
 plot(rocObj, print.auc = TRUE)
 ```
 
-The AUC value of 0.821 suggests that the Gradient Boosting model has a good measure of separability. Meaning that there is an 82.1% chance that the model is be able to distinguish between positive class (countries supporting the right of transgender individuals to change their civil documents) and negative class (countries not supporting). The curve is also close to the top left corner of the graph, which means that our model has a high sensitivity (it correctly identifies a high percentage of actual positives) and a high specificity (it correctly identifies a high percentage of actual negatives). In conclusion, the ROC curve indicates that the Gradient Boosting model performs well on our data set with a balance between sensitivity and specificity.
+The AUC value of 0.82 suggests that the Gradient Boosting model has a good measure of separability. Meaning that there is an 82% chance that the model is be able to distinguish between positive class (countries supporting the right of transgender individuals to change their civil documents) and negative class (countries not supporting). The curve is also close to the top left corner of the graph, which means that our model has a high sensitivity (it correctly identifies a high percentage of actual positives) and a high specificity (it correctly identifies a high percentage of actual negatives). In conclusion, the ROC curve indicates that the Gradient Boosting model performs well on our data set with a balance between sensitivity and specificity.
 
 ### Neural Networks
 
@@ -1930,11 +1928,11 @@ plot(rocObj, col="red", print.thres = TRUE)
 ```
 
 ```{r}
-nnPredictedClass <- as.factor(ifelse(nnProb[,"Yes"] > 0.629, "Yes", "No"))
+nnPredictedClass <- as.factor(ifelse(nnProb[,"Yes"] > 0.643, "Yes", "No"))
 confusionMatrix(nnPredictedClass, testing$binary_qc19)
 ```
 
-The Accuracy levels decrease to 73%, as well as, the Specificity to 75.24%. For the Sensitivity there is an improvement to 72%.
+The Accuracy levels decrease to 74%, as well as, the Specificity to 73.27%. For the Sensitivity there is an improvement to 75.14%.
 
 ```{r}
 rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
