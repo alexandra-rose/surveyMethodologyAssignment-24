@@ -171,7 +171,7 @@ merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRU
 
 In this section, we will try to reveal predictors of support or lack thereof for transgender rights, specifically the ability to change civic documents. During this step, we will oscillate between individual-level and country-level analyses, developing our thoughts based on a previous literature review during which we identified key predictors explaining support of transgender rights. (see Campbell et al., 2019; Earl et al., 2020; Flores, 2015; Flores et al., 2016; Harrison and Michelson, 2019; Norton and Herek, 2013)
 
-## Descriptive Analysis 
+## Descriptive Analysis
 
 ### Gender
 
@@ -971,7 +971,7 @@ In both cases, the p-values are less than the significance level of 0.05, we rej
 
 In this section, we investigated predictors we inferred from the literature and drew conclusion from both the individual and country level.
 
-As such, we present both demographic (e.g. attitudes or share of minorities) and country level characteristics. From the demographic variables we inferred three country-level variables. All three variables pertain to the idea of measuring the general societal sentiment towards attitudes closely tied to the support of transgender rights. These sentiments include attitudes on the binary conception of gender, support for LGB rights and general awareness levels of discrimination against the transgender community. These sentiments foster a societal context shaping what is socially acceptable. We therefore, considered these variables more important than more abstract operationalizations of the discourse space, such as government characteristics. Moreover, we include legal characteristics which portray more accurately government policy which in turn influence support levels. We find all these variables to be statistical significantly associated with the support for transgender rights. 
+As such, we present both demographic (e.g. attitudes or share of minorities) and country level characteristics. From the demographic variables we inferred three country-level variables. All three variables pertain to the idea of measuring the general societal sentiment towards attitudes closely tied to the support of transgender rights. These sentiments include attitudes on the binary conception of gender, support for LGB rights and general awareness levels of discrimination against the transgender community. These sentiments foster a societal context shaping what is socially acceptable. We therefore, considered these variables more important than more abstract operationalizations of the discourse space, such as government characteristics. Moreover, we include legal characteristics which portray more accurately government policy which in turn influence support levels. We find all these variables to be statistical significantly associated with the support for transgender rights.
 
 Aside from these variables - concerning demographic characteristics - we find significant effects of gender, political ideology, religious affiliation, contact with transgender individuals, age, pertaining to a sexual minority, education level, individual economic situation and the place of residence. As such, we confirm large parts of the literature on acceptance of transgender rights.
 
@@ -1297,7 +1297,7 @@ mice_imputed <- data.frame(
   imputed_rf = imputed_rf  
 
   )
-
+view(mice_imputed)
 ```
 
 ```{r}
@@ -1314,7 +1314,7 @@ plots <- list()
 # Loop through the updated variables to create plots with an adjusted binwidth
 for (i in 1:length(variables)) {
   plots[[i]] <- ggplot(mice_imputed, aes_string(x = variables[i])) +
-    geom_histogram(binwidth = 3, fill = colors_fill[i], color = colors_border[i], position = "identity") +
+    geom_histogram(binwidth = 1, fill = colors_fill[i], color = colors_border[i], position = "identity") +
     ggtitle(titles[i]) +
     theme_classic()
 }
@@ -1323,7 +1323,7 @@ for (i in 1:length(variables)) {
 plot_grid(plotlist = plots, nrow = 3, ncol = 2)
 ```
 
-The best imputation method seem to be PMM-Imputed distribution
+The best imputation methods seem to be PMM-Imputed distribution and the Random Forest Imputed Distribution.
 
 ```{r}
 Data_final_Ind <- Data_final_Ind %>%
@@ -1333,7 +1333,7 @@ Data_final_Ind <- Data_final_Ind %>%
 ```{r}
 
 Data_final_Ind$age_stopped_education <- ifelse(is.na(Data_final_Ind$age_stopped_education), 
-                                               Data_final_Ind$imputed_pmm, 
+                                               Data_final_Ind$imputed_pmm, # we decided to opt for the pmm
                                                Data_final_Ind$age_stopped_education)
 
 Data_final_Ind <- Data_final_Ind %>% select(-imputed_pmm)
@@ -1720,7 +1720,6 @@ rpart.plot(dtFit, digits=4)
 
 **Interpretation of one path:** For individuals who 'Tend to disagree,' 'Totally disagree,' or 'Don’t know' with qc15_1_ordinal, and who have a prop_gndr_bin value less than 0.002448, if they also have a prop_dis_wide value greater than or equal to 0.002342. This particular path leads to a leaf node that predicts 'Yes.' In this node, the proportion of observations from the data set that result in a 'Yes' prediction is 5.16%, with a probability score of 0.5872 (58.72%) for this prediction.
 
-
 **Prediction**
 
 ```{r}
@@ -1732,7 +1731,7 @@ prediction <- as.factor(ifelse(dtProb[,"Yes"] > 0.5, "Yes", "No"))
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-We can observe an improvement in the model's accuracy, now at 75.29%. There's also a notable increase in sensitivity, which is currently at 62.68%, suggesting better detection of positive cases. Specificity is 83% and is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
+We can observe an improvement in the model's accuracy, now at 75.29%. There's also a notable increase in sensitivity, which is currently at 62.68%, suggesting better detection of positive cases. However, not better that the logistic model. Specificity is 83,27% . It is still reflecting strong predictive power for negative cases. These results are more promising and indicate that the model is becoming more robust in terms of overall predictive accuracy and the ability to identify positive instances in comparison to the previous model.
 
 ### Using Caret
 
@@ -1768,7 +1767,7 @@ confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-The model has shown a no improvement in Accuracy, Specificity and Sensitivity. However, is still really unbalanced. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is less effective at identifying positive cases.
+The model has shown similar results in Accuracy, Specificity and Sensitivity. However, is still really unbalanced. These changes suggest that while the model is becoming better at correctly identifying negative cases and overall correct predictions, it is less effective at identifying positive cases in comparison.
 
 ### Random Forest
 
@@ -1797,7 +1796,7 @@ prediction <- as.factor(ifelse(rfProb[,"Yes"] > 0.603, "Yes", "No"))
 confusionMatrix(prediction, testing$binary_qc19)
 ```
 
-The model shows a slight decrease in Accuracy. However, the balance for Specificity and Sensitivity has improved.
+This model is showing promising results. The balance for Specificity and Sensitivity has improved and the Accuracy level is the biggest overall at 75.47%.
 
 `NOTE` As the last models where taking more than 8 hours to process, we decided to use Parallel Processing and a custom grid.
 
@@ -1866,7 +1865,7 @@ confusionMatrix(prediction, testing$binary_qc19)
 
 ```
 
-This is the best model so far, with an Accuracy of 75.07%, Sensitivity of 74.64% and a Specificity of 75.35%
+This model is the best so far in terms of balance between Specificity and Sensitivity. And Accuracy is at 75.34%.
 
 Variables Importance
 
@@ -1933,7 +1932,7 @@ nnPredictedClass <- as.factor(ifelse(nnProb[,"Yes"] > 0.643, "Yes", "No"))
 confusionMatrix(nnPredictedClass, testing$binary_qc19)
 ```
 
-The Accuracy levels decrease to 74%, as well as, the Specificity to 73.27%. For the Sensitivity there is an improvement to 75.14%.
+The Accuracy levels decrease to 74.12%, as well as, the Specificity to 72.35%. For the Sensitivity there is an improvement to 76.91%.
 
 ```{r}
 rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
@@ -1944,7 +1943,11 @@ This plot is further evidence that the best predictive model is the gradient boo
 
 ### Final Predictive Model
 
-The selected predictive model for our international analysis is Gradient Boosting, which has consistently outperformed all other models in terms of accuracy. This model not only demonstrates the highest accuracy but also achieves the most balanced rates of specificity and sensitivity. Such a robust performance profile makes it the optimal choice for our data set. We found that this model is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents to reflect their gender identity.
+The selected predictive model for our international analysis is Gradient Boosting (GB), which has consistently outperformed all other models in terms of accuracy, except for the case of the Random Forest (RF) . However, RF has really unbalanced Sensitivity and Specificity rates.
+
+GB not only has one of the highest Accuracy levels but also achieves the most balanced rates of Specificity and Sensitivity. Such a robust performance profile makes it the optimal choice for our data set.
+
+We found that this model, is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents.
 
 ## LITERATURE
 
