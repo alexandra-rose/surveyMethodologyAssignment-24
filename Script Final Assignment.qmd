@@ -7,9 +7,9 @@ editor_options:
   chunk_output_type: inline
 ---
 
-# Final Assignment
+## Final Assignment
 
-### Libraries
+## Libraries
 
 ```{r}
 rm(list = ls())
@@ -18,7 +18,7 @@ rm(list = ls())
 #setwd("C:/Users/sofia/Documents/Documentos/Master Computational Social Sciences/Survey Research Methodology II/Final Assignment/surveyMethodologyAssignment-24")
 ```
 
-```{r}
+```{r, results='hide'}
 library(haven)
 library(readr)
 library(haven) 
@@ -50,11 +50,10 @@ library(Matrix)
 library(lattice)
 ```
 
-### Data
+## Data
 
 ```{r}
 data <- read_dta("Data/ZA7575.dta")
-
 ```
 
 ## DATA CLEANING
@@ -170,9 +169,11 @@ Eco_Extra_Data <- read_delim("Eco Extra Data.csv",
 merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRUE)
 ```
 
-## DESCRIPTIVE ANALYSIS - Explaining cross-country differences
+## EXPLAINING CROSS-COUNTRY DIFFERENCES
 
 In this section, we will try to reveal predictors of support or lack thereof for transgender rights, specifically the ability to change civic documents. During this step, we will oscillate between individual-level and country-level analyses, developing our thoughts based on a previous literature review during which we identified key predictors explaining support of transgender rights. (see Campbell et al., 2019; Earl et al., 2020; Flores, 2015; Flores et al., 2016; Harrison and Michelson, 2019; Norton and Herek, 2013)
+
+## Descriptive Analysis 
 
 ### Gender
 
@@ -962,7 +963,19 @@ print(kruskal_gdppc)
 
 In both cases, the p-values are less than the significance level of 0.05, we reject the null hypothesis of the Kruskal-Wallis test, which states that the group medians are equal. This results imply that the group medians are not all equal, and there is evidence of a difference among the groups defined by the our dependent variable.
 
-### Statistical modeling
+### General conclusion
+
+In this section, we investigated predictors we inferred from the literature and drew conclusion from both the individual and country level.
+
+As such, we present both demographic (e.g. attitudes or share of minorities) and country level characteristics. From the demographic variables we inferred three country-level variables. All three variables pertain to the idea of measuring the general societal sentiment towards attitudes closely tied to the support of transgender rights. These sentiments include attitudes on the binary conception of gender, support for LGB rights and general awareness levels of discrimination against the transgender community. These sentiments foster a societal context shaping what is socially acceptable. We therefore, considered these variables more important than more abstract operationalizations of the discourse space, such as government characteristics. Moreover, we include legal characteristics which portray more accurately government policy which in turn influence support levels. We find all these variables to be statistical significantly associated with the support for transgender rights. 
+
+Aside from these variables - concerning demographic characteristics - we find significant effects of gender, political ideology, religious affiliation, contact with transgender individuals, age, pertaining to a sexual minority, education level, individual economic situation and the place of residence. As such, we confirm large parts of the literature on acceptance of transgender rights.
+
+Lastly, we include general economic variables in order to consider possible repercussions from lack of economic success furthering our individual-level inquiry into the economic situations. Here, we find statistical significance as well.
+
+It is important to note that we identify one key variable to not be influential. Being part of any minority is not associated with support of transgender rights. This is particularly important with regard countries with large self-perceived minorities.
+
+## Statistical modeling
 
 **Dependent Variable (qc19)**
 
@@ -1502,7 +1515,7 @@ We do not see any systematic deviations that could indicate model misspecificati
 
 ### General Conclusion
 
-Based on the results from your multileveled model, we can draw several conclusions regarding cross-country differences in support for transgender individuals obtaining official documents. These are the main variables we could establish that are able to impact the support that transgender individuals have for changing their documents to match their inner gender identity.
+Based on the results from your multilevele model, we can draw several conclusions regarding cross-country differences in support for transgender individuals obtaining official documents. These are the main variables we could establish that are able to impact the support that transgender individuals have for changing their documents to match their inner gender identity.
 
 **Demographic Variables**
 
@@ -1526,7 +1539,7 @@ Indicators on the general support in a country for supporting the possibility of
 
 In conclusion, the main reasons for cross-country differences in support levels for transgender individuals obtaining official documents appear to be related to demographic factors (gender and age), political and religious affiliations, social determinants, awareness regarding LGBTI issues, and economic conditions within a country.
 
-### Prediction
+## PREDICTIVE MODELING
 
 We want to create a model that is able to predict the support for transgender individuals changing civil documents. In order to be able to predict our target variable, we need to define the success that we want to predict.
 
@@ -1782,7 +1795,7 @@ confusionMatrix(prediction, testing$binary_qc19)
 
 The model shows a slight decrease in Accuracy. Howewver, the balance for Specificity and Sensitivity has improved.
 
-#### `NOTE` As the last models where taking more than 8 hours to process, we decided to use Parallel Processing and a custom grid.
+`NOTE` As the last models where taking more than 8 hours to process, we decided to use Parallel Processing and a custom grid.
 
 ```{r}
 library(doParallel)
