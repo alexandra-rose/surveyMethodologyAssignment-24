@@ -1655,6 +1655,7 @@ ctrl <- trainControl(method = "repeatedcv",
 ### Knn
 
 ```{r}
+set.seed(124)
 knnFit <- train(ModelS, 
                   data = training,
                   method = "kknn",   
@@ -1689,6 +1690,7 @@ control = rpart.control(minsplit = 20, maxdepth = 10, cp=0.01)
 A decision tree:
 
 ```{r}
+set.seed(125)
 dtFit <- rpart(ModelS, data=training, method = "class", control = control)
 summary(dtFit)
 ```
@@ -1723,6 +1725,8 @@ We can observe an improvement in the model's accuracy, now at 74.99%. There's al
 ### Using Caret
 
 ```{r}
+set.seed(134)
+
 caret.fit <- train(ModelS, 
                    data = training, 
                    method = "rpart",
@@ -1757,6 +1761,7 @@ The model has shown a slight improvement in Accuracy, Specificity and Sensitivit
 ### Random Forest
 
 ```{r}
+set.seed(234)
 rfFit <- train(ModelS, 
                   data = training,
                   method = "rf",   
