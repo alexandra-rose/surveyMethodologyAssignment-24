@@ -1315,7 +1315,7 @@ Data_final_Ind <- Data_final_Ind %>%
 
 ```{r}
 
-Data_final_Ind$age_stopped_education <- ifelse(a.na(Data_final_Ind$age_stopped_education), 
+Data_final_Ind$age_stopped_education <- ifelse(is.na(Data_final_Ind$age_stopped_education), 
                                                Data_final_Ind$imputed_pmm, 
                                                Data_final_Ind$age_stopped_education)
 
