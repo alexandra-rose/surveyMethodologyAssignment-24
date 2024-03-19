@@ -712,7 +712,7 @@ summary(glm_model_3)
 ```
 
 ```{r}
-#| echo: true
+#| echo: false
 
 glm_model_4 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
                Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
@@ -720,6 +720,12 @@ glm_model_4 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
                data = Data, family = binomial, 
                control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
 summary(glm_model_4)
+```
+
+```{r}
+library(stargazer)
+stargazer(glm_model_4, type = "text", title = "Results of GLMM Analysis", out = "model_results.html")
+
 ```
 
 We compared some models with different transformations and different variables and end up with the best model, to this one above with following results:
@@ -751,33 +757,28 @@ qqmath(~ resid(glm_model_4, type = "pearson"), distribution = qnorm,
 
 We do not see any systematic deviations that could indicate model misspecification. The Q-Q plot shows the residuals are not perfectly normally distributed, which is common and expected pattern for a logistic regression.
 
-### General Conclusion
+## Key Findings - Demographics and Beliefs
 
-Based on the results from your multilevele model, we can draw several conclusions regarding cross-country differences in support for transgender individuals obtaining official documents. These are the main variables we could establish that are able to impact the support that transgender individuals have for changing their documents to match their inner gender identity.
+-   **Gender Influence**: Females show higher odds of support compared to males, potentially reflecting societal gender roles and perceptions.
 
-**Demographic Variables**
+-   **Age Dynamics**: Support increases with age up to a point, then declines, suggesting life experiences or generational shifts might influence attitudes toward inclusivity.
 
-Gender, has a significant negative coefficient indicating that on average, males are less likely to support transgender individuals rights to change their official documents compared to females. The coefficients of age and age squared are significant and negative, suggesting that younger individuals may be more supportive of the target variable but in a decreasing rate.
+-   **Political Ideology**: Conservative alignment correlates with less support for transgender individuals' rights to change civil documents, showing a 22.8% decrease in support.
 
-**Ideology and Religion**
+-   **Religious Impact**: Catholic individuals show 21.2% less support, while Jewish individuals are slightly more supportive, though the latter group is smaller in the dataset.
 
-There are categories in Political Ideology that are significant and have a negative impact on our dependent variables. This suggest that having a political ideology more towards the right tends to decrease the support for our target variable.
+## Key Findings - Social and Economic Factors
 
-Moreover, Religion category levels are also significant in many cases. Indicating that religious affiliation is a factor that affect the support, specially we can observe that non-religious categories tend to be more supportive than more conservative religious categorizes.
+-   **Economic Stability**: Individuals with no difficulty paying bills are more supportive, linking economic security with supportive attitudes.
 
-**Social Representation**
+-   **Contact with Transgender Individuals**: Lack of contact is associated with a 45.5% decrease in support, highlighting the importance of visibility and personal relationships.
 
-The variable sd1_7_factor that is related to answering the question on where they have a transgender acquaintances. The individuals who responded with an automatic Refusal tend to be the least supportive individuals towards our dependent variable. Highlighting the need for representation and personal connections in creating a supportive environment for transgender individuals' rights. It also indicates that familiarity with transgender individuals, perhaps through personal acquaintances, correlates with increased understanding and advocacy for the necessity to changes to official documents.
+-   **Sexual Minority and Support**: Non-members of sexual minorities are less supportive of transgender rights for document changes.
 
-Further, we find that not being part of a sexual minority is associated with an extremely high non-supportive attitude regarding the legal provision that transgender individuals should be able to change their civil documents.
+-   **Country-Level Factors**: General support for a third gender option and awareness of discrimination correlate with supportive attitudes. Higher unemployment rates within a country are unexpectedly associated with more support.
 
-**Country Specific Variables**
+## Conclusion
 
-Indicators on the general support in a country for supporting the possibility of a third gender indication and country-level awareness of discrimination against transgender individuals are strongly associated with higher supportive attitudes towards allowing transgender individuals to change their civil documents. Unemployment resulted significant and positive, suggesting that higher unemployment rates within a country might be associated with greater support for transgender rights, which could indicate a variety of social dynamics.
+-   **Cross-Country Differences**: Variations in support for transgender rights across countries are influenced by demographics (gender, age), political and religious affiliations, social determinants, awareness of LGBTI issues, and economic conditions.
 
-In conclusion, the main reasons for cross-country differences in support levels for transgender individuals obtaining official documents appear to be related to demographic factors (gender and age), political and religious affiliations, social determinants, awareness regarding LGBTI issues, and economic conditions within a country.
-
-ICC it gives a value that explains how good a model is at explaining the differences between countries, robustness check
-
--   we didnt put it because, our assumption is that individual level variables also explain cross country differences because demographics are different across countries
--   but because individual level variables
+-   Model
