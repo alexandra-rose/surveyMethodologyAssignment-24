@@ -125,46 +125,155 @@ Eco_Extra_Data <- read_delim("Eco Extra Data.csv",
     delim = ";", escape_double = FALSE, trim_ws = TRUE) 
 
 merged_df <- merge(merged_df_1, Eco_Extra_Data, by = "country_name", all.x = TRUE)
+
+df_descriptive <- merged_df
 ```
 
-```{r Clean Data to show}
+## Feature selection {style="font-size: 100%;"}
+
+```         
+-   Campbell, M., Hinton, J. D. X. & Anderson, J. R. (2019) A systematic review of the relationship between religion and attitudes toward transgender and gender-variant people. International Journal of Transgenderism, 20:1, 21-38, DOI: 10.1080/15532739.2018.1545149
+-   Earle, M. et al. (2021). A multilevel analysis of LGBT (Lesbian, Gay, Bisexual, Transgender) rights support across 77 countries: The role of contact and country laws . British Journal of Social Psychology. doi:10.1111/bjso.12436
+-   Flores, A. R. (2015) Attitudes toward transgender rights: perceived knowledge and secondary interpersonal contact, Politics, Groups, and Identities, 3:3, 398-416, DOI: 10.1080/21565503.2015.1050414-
+-   Flores, A. R., Brown, T. N. T., & Park, A. S. (2016). Public Support for Transgender Rights: A Twenty-three Country Survey. The Williams Institute at UCLA School of Law. <http://www.jstor.org/stable/resrep34965->
+-   Harrison, B.F., Michelson, M.R. (2019) Gender, Masculinity Threat, and Support for Transgender Rights: An Experimental Study. Sex Roles 80, 63–75. <https://doi.org/10.1007/s11199-018-0916-6>
+-   Norton, A.T., Herek, G.M. (2013) Heterosexuals’ Attitudes Toward Transgender People: Findings from a National Probability Sample of U.S. Adults. Sex Roles 68, 738–753.
+```
+
+## Descriptive Analysis
+
+```{r}
+
+#| echo: false
+
+df_descriptive$qc19_multinominal <- factor(df_descriptive$qc19, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
+
+qc19labels <- c("Yes", "No", "Don't know")
+names(qc19labels) <- c(1, 2, 3)
+```
+
+```{r}
+#| results: 'markup'
+
+df_descriptive |>
+  mutate(d10 = as.factor(d10),
+         qc19_n = as.numeric(qc19),
+         qc19 = as.factor(qc19)) |> 
+  group_by(d10) |> 
+  mutate(gsumqc19 = sum(qc19_n)) |> 
+  ungroup() |> 
+  group_by(qc19, d10) |> 
+  mutate(gshare19 = (sum(qc19_n)/gsumqc19)*100) |> 
+  ungroup() |> 
+  ggplot(aes(x = qc19_multinominal, y = gshare19, fill = d10))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", gshare19))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  labs(title = "Do you think that transgender persons should be able to change\ntheir civil documents to match their inner gender identity?",
+y = NULL,
+x = NULL,
+caption = "Source: Eurobarometer 91.4") +
+  scale_fill_manual(labels = c("Men", "Women"), values = c("blue", "red")) +
+  theme_minimal() +
+  theme(legend.position = "bottom") +  
+  guides(fill = guide_legend(title = NULL)) 
+```
+
+## Binary conception of gender
+
+```{r}
+
+#| echo: false
+
+df_descriptive$qc19_multinominal <- factor(df_descriptive$qc19, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
+
+df_descriptive$qc20_multinominal <- factor(df_descriptive$qc20, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
+
+plot_binary_1 <-
+  df_descriptive |> 
+  group_by(country_name) |> 
+  summarise(share_no = mean(qc20 == 2, na.rm = TRUE)*100) |> 
+  arrange(desc(share_no)) |> 
+  mutate(country_name = factor(country_name, levels = country_name)) |>
+  filter(country_name != "Otros países") |> 
+ggplot(aes(x = country_name, y = share_no)) +
+  geom_col(fill = "red") +
+  labs(x = "",
+       y = "",
+       caption = "Source: Eurobarometer 91.4") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.margin = margin(0, 0, 0, 0))  +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_text((aes(label = sprintf("%.1f%%", share_no))),vjust = -0.5, size = 2)  +
+  annotate("text", x = 9.5, y = 70, 
+           label = "Share of 'No' responses to qc19:\nDo you think that transgender persons should be able to change\ntheir civil documents to match their inner gender identity?",
+           hjust = 0, vjust = 0.5, size = 3, color = "black") +
+  geom_rect(aes(xmin = 9.3, xmax = 24.3, 
+                ymin = 62, ymax = 77),
+                fill = "transparent", color = "black", linewidth = 1)
+
+plot_binary_2 <- 
+  df_descriptive |> 
+  group_by(country_name) |> 
+  summarise(share_no = mean(qc19 == 2, na.rm = TRUE)*100) |> 
+  arrange(desc(share_no)) |> 
+  mutate(country_name = factor(country_name, levels = country_name)) |>
+  filter(country_name != "Otros países") |> 
+ggplot(aes(x = country_name, y = share_no)) +
+  geom_col(fill = "red") +
+  labs(x = "",
+       y = "",
+       caption = "Source: Eurobarometer 91.4") +
+  theme_minimal()+ 
+  theme(axis.text.x = element_text(angle = 90, hjust= 0),
+        plot.margin = margin(-10, 0, 0, 0)) +
+  scale_x_discrete(position = "top") +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_text((aes(label = sprintf("%.1f%%", share_no))), vjust = -0.5, size = 2)  +
+  annotate("text", x = 10, y = 65, 
+           label = "Share of 'No' responses to qc20:\nDo you believe that official documents, like passports and birth\ncertificates, should have a third option, such as X or O (other)\nbeside male (M) and female (F)for those persons who do not\nidentify as female and male?",
+           hjust = 0, vjust = 0.5, size = 3, color = "black") +
+  geom_rect(aes(xmin = 9.8, xmax = 24.6, 
+                ymin = 53, ymax = 76),
+                fill = "transparent", color = "black", linewidth = 1)
+
+```
+
+::: panel-tabset
+## Rights
+
+```{r}
+#| echo: false
+
+plot_binary_1
+```
+
+## Gender binary
+
+```{r}
+#| echo: false
+
+plot_binary_2
+```
+
+## Association
+
+```{r}
 #| echo: true
 
-head(merged_df)
+df_country_1 <- 
+  df_descriptive |>
+  group_by(country_name) |> 
+  summarize(
+    prop_gndr_bin = (sum(qc20_multinominal == "Yes") / n())*100, 
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
 
+
+cor(df_country_1$prop_gndr_bin, df_country_1$prop_qc19_yes, method = "spearman")
 ```
+:::
 
-## Choosing the variables to build our models
-
--   based off of literature found
-
-    -   Campbell, M., Hinton, J. D. X. & Anderson, J. R. (2019) A systematic review of the relationship between religion and attitudes toward transgender and gender-variant people. International Journal of Transgenderism, 20:1, 21-38, DOI: 10.1080/15532739.2018.1545149
-    -   Earle, M. et al. (2021). A multilevel analysis of LGBT (Lesbian, Gay, Bisexual, Transgender) rights support across 77 countries: The role of contact and country laws . British Journal of Social Psychology. doi:10.1111/bjso.12436
-
-## 
-
--   based off of literature found
-
-    -   Flores, A. R. (2015) Attitudes toward transgender rights: perceived knowledge and secondary interpersonal contact, Politics, Groups, and Identities, 3:3, 398-416, DOI: 10.1080/21565503.2015.1050414-
-
-    -   Flores, A. R., Brown, T. N. T., & Park, A. S. (2016). Public Support for Transgender Rights: A Twenty-three Country Survey. The Williams Institute at UCLA School of Law. <http://www.jstor.org/stable/resrep34965->
-
-    -   Harrison, B.F., Michelson, M.R. (2019) Gender, Masculinity Threat, and Support for Transgender Rights: An Experimental Study. Sex Roles 80, 63–75. <https://doi.org/10.1007/s11199-018-0916-6>
-
-## 
-
--   based off of literature found
-
-    -   Norton, A.T., Herek, G.M. (2013) Heterosexuals’ Attitudes Toward Transgender People: Findings from a National Probability Sample of U.S. Adults. Sex Roles 68, 738–753.-
-    -   Williamson, Myles, 2023, "Replication Data for: A Global Analysis of Transgender Rights: Introducing the Trans Rights Indicator Project (TRIP)", <https://doi.org/10.7910/DVN/FXXLTS,> Harvard Dataverse, V1, UNF:6:E4O2rb6DFd44VSZjm9SQNQ== \[fileUNF\]
-
-<!-- -->
-
--   we added country level variables; legal rights of trans individuals variable and benchmark economic variables
-
-## 
-
--   we conduct associative tests to confirm literature and narrow down the variables to X
+## Religiosity
 
 ALEX COPIED EVERYTHING TO GET IT TO RUN \<3
 
@@ -222,6 +331,7 @@ df_descriptive <-
                              sd3 == 14 ~ "Other",
                              sd3 > 14 ~ "Don't know | Refusal")) 
 
+
 ```
 
 ```{r}
@@ -242,6 +352,15 @@ df_descriptive <-
 df_descriptive$qc1_8_ordinal <- factor(df_descriptive$qc1_8, levels = c(1, 2, 3, 4 , 5, 6),labels = c("Very wide spread", "Fairly wide spread", "Fairly rare", "Very rare", "Nonexistent
 ", "DK"))
 
+```
+
+::: panel-tabset
+## Cross Table
+
+```{r}
+#| echo: false
+
+
 df_country_2 <-
   df_descriptive |> 
   mutate(qc1_8_ordinal = case_when(
@@ -254,6 +373,7 @@ df_country_2 <-
     prop_dis_wide = (sum(qc1_8_ordinal == "Very or fairly wide spread") / n())*100, # Calculate proportion with high education
     prop_qc19_yes = (sum(qc19 == 1) / n())*100)
 ```
+
 
 
 ```{r}
@@ -286,8 +406,12 @@ df_descriptive <-
 
 ```
 
+## Share of Orthodox Christians
+
+
 ```{r}
 #| echo: false
+
 
 df_descriptive <- 
   df_descriptive |> 
@@ -331,7 +455,280 @@ df_country_3 <-
 df_descriptive$d25_multinominal <- factor(df_descriptive$d25, labels = c("Rural area", "Small and middle sized town", "Large town", "Don't know"))
 
 # levels = c(1, 2, 3)
+df_descriptive |> 
+  group_by(country_name) |> 
+  summarise(share = mean(sd3_cat == "Orthodox Christian", na.rm = TRUE)*100) |> 
+  arrange(desc(share)) |> 
+  mutate(country_name = factor(country_name, levels = country_name)) |>
+  filter(country_name != "Otros países") |> 
+ggplot(aes(x = country_name, y = share)) +
+  geom_col(fill = "red") +
+  labs(title = "Share of Orthodox Christians", 
+       x = "",
+       y = "",
+       caption = "Source: Eurobarometer 91.4") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
+        plot.margin = margin(0, 0, 0, 0))  +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  geom_text((aes(label = sprintf("%.1f%%", share))),vjust = -0.5, size = 2)
+
 ```
+:::
+
+## Contact with transgender individuals
+
+```{r}
+#|echo: false
+
+df_descriptive <-
+  df_descriptive |> 
+  mutate(
+    sd1_7_NA = car::recode(sd1_7, "1=1; 2=0; 3=NA; 4=2"),
+    sd1_7_multinomial = factor(sd1_7_NA, levels = c(0, 1, 2), labels = c("No", "Yes", "Don't know"))
+  )
+
+```
+
+```{r}
+#|echo: false
+
+df_descriptive|> 
+  drop_na(sd1_7_multinomial) |> 
+  group_by(sd1_7_multinomial, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(sd1_7_multinomial) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = sd1_7_multinomial, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by previous conatct with transgender person",
+       x = "Contact",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+## Age
+
+```{r}
+#| echo: false
+anova <- aov(d11 ~ qc19_multinominal, data = df_descriptive)
+summary(anova)
+```
+
+```{r}
+#|echo: false
+
+ggplot(df_descriptive, aes(x = qc19_multinominal, y = d11, fill = "red")) +
+  geom_boxplot(color = "red") +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents\nfor transgender people",
+       y = "Age",
+       x = "Support",
+       caption = "Source: Eurobarometer 91.4") +
+  theme(legend.position = "none")
+```
+
+## Awareness of discrimination
+
+::: panel-tabset
+## Individual level
+
+```{r}
+#|echo: false
+
+df_descriptive$qc1_8_ordinal <- factor(df_descriptive$qc1_8, levels = c(1, 2, 3, 4 , 5, 6),labels = c("Very wide spread", "Fairly wide spread", "Fairly rare", "Very rare", "Nonexistent
+", "DK"))
+
+df_descriptive|> 
+  drop_na(qc1_8_ordinal) |> 
+  group_by(qc1_8_ordinal, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(qc1_8_ordinal) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = qc1_8_ordinal, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by perceived discrimination transgender people face",
+       x = "Contact",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+## Country level
+
+```{r}
+#| echo: true
+
+df_country_2 <-
+  df_descriptive |> 
+  mutate(qc1_8_ordinal = case_when(
+    qc1_8_ordinal == "Very wide spread" ~ "Very or fairly wide spread",
+    qc1_8_ordinal == "Fairly wide spread" ~ "Very or fairly wide spread",
+    TRUE ~ qc1_8_ordinal
+  )) |> 
+  group_by(country_name) |> 
+  summarize(
+    prop_dis_wide = (sum(qc1_8_ordinal == "Very or fairly wide spread") / n())*100, 
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
+
+
+cor(df_country_2$prop_dis_wide, df_country_2$prop_qc19_yes, method = "spearman")
+```
+:::
+
+## Sexual minority
+
+```{r}
+#| echo: false
+
+df_descriptive <- 
+  df_descriptive |>  
+  mutate(
+    sd2_5 = factor(sd2_5, levels = c(0, 1), labels = c("Not mentioned", "Yes"))
+  )
+
+
+df_descriptive|> 
+  drop_na(sd2_5) |> 
+  group_by(sd2_5, qc19_multinominal) |> 
+  summarise(count = n()) |> 
+  ungroup() |> 
+  group_by(sd2_5) |> 
+  mutate(share = count / sum(count) * 100) |>
+  ungroup() |> 
+  ggplot(aes(x = sd2_5, y = share, fill = qc19_multinominal))+
+  geom_bar(stat = "identity", position = "dodge")+
+  geom_text((aes(label = sprintf("%.1f%%", share))), position = position_dodge(width = 0.9), vjust = -0.3, size = 3) +
+  theme_minimal() +
+  labs(title = "Support of change of gender in civil documents for transgender\npeople by perceived discrimination transgender people face",
+       x = "Contact",
+       y = "",
+       caption = "Source: Eurobarometer 91.4")+
+  theme(legend.position = "bottom",
+        legend.title = element_blank()) +
+  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
+  scale_fill_brewer(palette = "Dark2")
+```
+
+## Support for LGB rights
+
+::: panel-tabset
+## Individual level
+
+```{r}
+#| echo: false
+
+df_descriptive <- 
+  df_descriptive |> 
+  mutate(
+    qc15_1_ordinal = factor(qc15_1, levels = c(1, 2, 3, 4, 5), labels = c("Totally agree", "Tend to agree", "Tend to disagree", "Totally disagree", "Don't know"))
+  )
+
+CrossTable(df_descriptive$qc15_1_ordinal, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+
+## Country level
+
+```{r}
+#| echo: true
+
+df_country_3 <- 
+  df_descriptive |>
+  mutate(qc15_1_ordinal = case_when(
+    qc15_1_ordinal == "Totally agree" ~ "Totally or tend to agree",
+    qc15_1_ordinal == "Tend to agree" ~ "Totally or tend to agree",
+    TRUE ~ qc15_1_ordinal
+  )) |> 
+  group_by(country_name) |> 
+  summarize(
+    prop_lgb_yes = (sum(qc15_1_ordinal == "Totally or tend to agree") / n())*100, 
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
+
+
+cor(df_country_3$prop_lgb_yes, df_country_3$prop_qc19_yes, method = "spearman")
+```
+:::
+
+## Legal protections
+
+::: panel-tabset
+## Overview
+
+```{r}
+#| echo: false
+
+df <- df_descriptive %>% 
+  select(country_name, adp_general)
+df$country_name <- as.character(df$country_name)
+
+df_unique <- df %>%
+  group_by(country_name) %>%
+  summarise(adp_general = max(adp_general)) %>%
+  ungroup()
+
+europe_map <- ne_countries(scale = "medium", continent = "europe", returnclass = "sf")
+
+df_joined <- left_join(europe_map, df_unique, by = c("sovereignt" = "country_name"))
+
+df_joined$status <- case_when(
+  df_joined$adp_general == 1 ~ "General",
+  df_joined$adp_general == 0 ~ "None",
+  TRUE ~ "No Information"
+)
+
+df_plot <- df_joined %>% 
+  select(sovereignt, status)
+
+df_plot <- na.omit(df_plot)
+
+pal <- colorFactor(c("#2ca02c", "#377eb8", "#d62728"), domain = df_plot$status)
+
+plot <- leaflet(df_plot) %>%
+  addProviderTiles(providers$CartoDB.Positron) %>%
+  addPolygons(fillColor = ~pal(status),
+              color = "black",
+              fillOpacity = 0.7,
+              weight = 1,
+              popup = ~paste(sovereignt, status)) %>%
+  addLegend(pal = pal, values = ~status,
+            title = "Status",
+            position = "bottomright")
+plot
+```
+
+## Statistical association
+
+```{r}
+CrossTable(df_descriptive$adp_general, df_descriptive$qc19_multinominal,
+           digits=2, 
+           expected=F, 
+           asresid=T, 
+           chisq=TRUE, 
+           prop.chisq=F, 
+           format="SPSS")
+```
+:::
 
 ## Statistical Modeling
 
@@ -813,4 +1210,141 @@ We do not see any systematic deviations that could indicate model misspecificati
 
 -   **Cross-Country Differences**: Variations in support for transgender rights across countries are influenced by demographics (gender, age), political and religious affiliations, social determinants, awareness of LGBTI issues, and economic conditions.
 
+
 -   Model
+
+-   we didnt put it because, our assumption is that individual level variables also explain cross country differences because demographics are different across countries
+-   but because individual level variables
+
+## Prediction
+
+We aim to build a model to predict support for transgender individuals to change legal documents.
+
+`Model = binary_qc19 ~ male + d11 + I(d11^2) + political_ideology + Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal + Unemployment + prop_gndr_bin + prop_dis_wide`
+
+```{r}
+#| echo: false
+#| output: false
+
+ModelS = binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology + Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal + Unemployment + prop_gndr_bin + prop_dis_wide
+
+data_pred <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
+
+data_pred <- data_pred |> 
+  filter(!is.na(binary_qc19))
+
+data_pred$prop_gndr_bin <- data_pred$prop_gndr_bin / 100
+data_pred$prop_dis_wide <- data_pred$prop_dis_wide / 100
+set.seed(123)
+
+#we move to split the data into testing and training with a 80% split.
+
+in_train <- createDataPartition(y = data_pred$binary_qc19, p = 0.8, list = FALSE)
+
+in_train <- in_train[, 1]
+
+training <- data_pred[in_train, ]
+testing <- data_pred[-in_train, ]
+
+#remove rows with NA's
+training <- na.omit(training)
+testing <- na.omit(testing)
+# defining the levels of our dependent variable
+training$binary_qc19 <- factor(training$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
+
+testing$binary_qc19 <- factor(testing$binary_qc19, levels = c(0, 1), labels = c("No", "Yes"))
+# we first need to correct the factor levels to be able to run the predictive model
+
+# For political_ideology
+levels(training$political_ideology) <- make.names(levels(training$political_ideology), unique = TRUE)
+levels(testing$political_ideology) <- make.names(levels(testing$political_ideology), unique = TRUE)
+# For Religion_cat
+levels(training$Religion_cat) <- make.names(levels(training$Religion_cat), unique = TRUE)
+levels(testing$Religion_cat) <- make.names(levels(testing$Religion_cat), unique = TRUE)
+# For sd1_7_factor
+levels(training$sd1_7_factor) <- make.names(levels(training$sd1_7_factor), unique = TRUE)
+levels(testing$sd1_7_factor) <- make.names(levels(testing$sd1_7_factor), unique = TRUE)
+# For qc15_1_ordinal
+levels(training$qc15_1_ordinal) <- make.names(levels(training$qc15_1_ordinal), unique = TRUE)
+levels(testing$qc15_1_ordinal) <- make.names(levels(testing$qc15_1_ordinal), unique = TRUE)
+# For d60_ordinal
+levels(training$d60_ordinal) <- make.names(levels(training$d60_ordinal), unique = TRUE)
+levels(testing$d60_ordinal) <- make.names(levels(testing$d60_ordinal), unique = TRUE)
+
+library(doParallel)
+numCores <- detectCores() - 1
+registerDoParallel(cores=numCores)
+ctrl <- trainControl(method = "repeatedcv", 
+                     number = 10,
+                     repeats = 1,
+                     classProbs = TRUE,
+                     summaryFunction = twoClassSummary,
+                     verboseIter = FALSE,
+                     allowParallel = TRUE) # allowing for the parallel processing
+
+
+# custom grid to make the computational process run within less than 8 hours, we tune in each parameter and found this one where the optimal onces.
+tune_grid_gbm <- expand.grid(
+    nrounds = c(100, 600),  
+    max_depth = 4,          
+    eta = 0.05,     
+    gamma = 0,              
+    colsample_bytree = 0.8, 
+    min_child_weight = 1,   
+    subsample = 0.8         
+)
+ 
+
+set.seed(456)
+
+# Update the train function call to use the new tune grid
+gbmFit <- train(ModelS, 
+                data = training,
+                method = "xgbTree",
+                preProc = c('scale', 'center'),
+                tuneGrid = tune_grid_gbm,
+                metric = "ROC",
+                trControl = ctrl)
+
+gbmProb = predict(gbmFit, testing, type="prob")
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
+plot(rocObj, col="red", print.thres = TRUE)
+prediction <- as.factor(ifelse(gbmProb[,"Yes"] > 0.603, "Yes", "No"))
+```
+
+## Gradient boosting
+
+```{r}
+confusionMatrix(prediction, testing$binary_qc19)
+```
+
+## Variables Importance
+
+```{r}
+gbm_imp <- varImp(gbmFit, scale = F)
+plot(gbm_imp, scales = list(y = list(cex = .95)))
+```
+
+## Partial dependence plot
+
+```{r}
+partial(gbmFit, pred.var = "prop_gndr_bin", plot = TRUE, rug = TRUE)
+```
+
+## ROC Curve
+
+```{r}
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
+plot(rocObj, print.auc = TRUE)
+```
+
+## Final Predictive Model
+
+The selected predictive model for our international analysis is Gradient Boosting (GB).
+
+GB not only has one of the highest Accuracy levels but also achieves the most balanced rates of Specificity and Sensitivity. Such a robust performance profile makes it the optimal choice for our data set.
+
+We found that this model, is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents.
+
+# THANK YOU!
+
