@@ -166,6 +166,46 @@ head(merged_df)
 
 -   we conduct associative tests to confirm literature and narrow down the variables to X
 
+ALEX COPIED EVERYTHING TO GET IT TO RUN \<3
+
+```{r}
+#| echo: false
+
+df_descriptive <- merged_df
+
+df_descriptive$qc19_multinominal <- factor(df_descriptive$qc19, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
+
+qc19labels <- c("Yes", "No", "Don't know")
+names(qc19labels) <- c(1, 2, 3)
+```
+
+```{r}
+#| echo: false
+
+df_descriptive$qc20_multinominal <- factor(df_descriptive$qc20, levels = c(1, 2, 3),labels = c("Yes", "No", "Don't know"))
+
+```
+
+```{r}
+#| echo: false
+
+df_country_1 <- 
+  df_descriptive |>
+  group_by(country_name) |> 
+  summarize(
+    prop_gndr_bin = (sum(qc20_multinominal == "Yes") / n())*100, # Calculate proportion with high education
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
+
+```
+
+
+```{r}
+#| echo: false
+
+df_descriptive$d1_ordinal <- factor(df_descriptive$d1, levels = c(1, 2, 3, 4 , 5, 6, 7, 8, 9, 10, 97, 98),labels = c("Left", "2", "3", "4", "5", "6", "7", "8", "9", "Right", "Non-response", "Don't know"))
+
+```
+
 ```{r}
 #| echo: false
 
@@ -182,62 +222,115 @@ df_descriptive <-
                              sd3 == 14 ~ "Other",
                              sd3 > 14 ~ "Don't know | Refusal")) 
 
-
 ```
-
-```{r Example of descriptives done}
-#| echo: true
-
-CrossTable(df_descriptive$sd3_cat, df_descriptive$qc19_multinominal,
-           digits=2, 
-           expected=F, 
-           asresid=T, 
-           chisq=TRUE, 
-           prop.chisq=F, 
-           format="SPSS")
-```
-
-## 
 
 ```{r}
 #| echo: false
 
+df_descriptive <-
+  df_descriptive |> 
+  mutate(
+    sd1_7_NA = car::recode(sd1_7, "1=1; 2=0; 3=NA; 4=2"),
+    sd1_7_multinomial = factor(sd1_7_NA, levels = c(0, 1, 2), labels = c("No", "Yes", "Don't know"))
+  )
 
-df_descriptive |> 
-  mutate(sd3_cat = fct_relevel(sd3_cat, "Don't know | Refusal", after = Inf)) |> 
-  ggplot(aes(x = sd3_cat)) +
-  geom_bar(fill = "black", color = "black", alpha = 0.5) +
-  labs(title = "Frequency by religious affiliation",
-       x = "",
-       y = "Absolutec count",
-       caption = "Source: Eurobarometer 91.4") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 ```
-
-## 
 
 ```{r}
 #| echo: false
 
+df_descriptive$qc1_8_ordinal <- factor(df_descriptive$qc1_8, levels = c(1, 2, 3, 4 , 5, 6),labels = c("Very wide spread", "Fairly wide spread", "Fairly rare", "Very rare", "Nonexistent
+", "DK"))
 
-df_descriptive |> 
+df_country_2 <-
+  df_descriptive |> 
+  mutate(qc1_8_ordinal = case_when(
+    qc1_8_ordinal == "Very wide spread" ~ "Very or fairly wide spread",
+    qc1_8_ordinal == "Fairly wide spread" ~ "Very or fairly wide spread",
+    TRUE ~ qc1_8_ordinal
+  )) |> 
   group_by(country_name) |> 
-  summarise(share = mean(sd3_cat == "Orthodox Christian", na.rm = TRUE)*100) |> 
-  arrange(desc(share)) |> 
-  mutate(country_name = factor(country_name, levels = country_name)) |>
-  filter(country_name != "Otros países") |> 
-ggplot(aes(x = country_name, y = share)) +
-  geom_col(fill = "red") +
-  labs(title = "Share of Orthodox Christians", 
-       x = "",
-       y = "",
-       caption = "Source: Eurobarometer 91.4") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1),
-        plot.margin = margin(0, 0, 0, 0))  +
-  scale_y_continuous(labels = scales::percent_format(scale = 1)) +
-  geom_text((aes(label = sprintf("%.1f%%", share))),vjust = -0.5, size = 2)
+  summarize(
+    prop_dis_wide = (sum(qc1_8_ordinal == "Very or fairly wide spread") / n())*100, # Calculate proportion with high education
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
+```
+
+
+```{r}
+#| echo: false
+
+df_descriptive <- 
+  df_descriptive |>  
+  mutate(
+    sd2t = factor(sd2t, levels = c(0, 1), labels = c("Not mentioned", "Yes"))
+  )
+```
+
+```{r}
+#| echo: false
+
+df_descriptive <- 
+  df_descriptive |>  
+  mutate(
+    sd2_5 = factor(sd2_5, levels = c(0, 1), labels = c("Not mentioned", "Yes"))
+  )
+```
+
+```{r}
+#| echo: false
+
+df_descriptive <- 
+  df_descriptive |> 
+  mutate(d8 = case_when(d8 < 98 ~ d8,
+                        TRUE ~ NA)) # turning don't know and refusal into NA to keep continuous character of the variable - imputed later
+
+```
+
+```{r}
+#| echo: false
+
+df_descriptive <- 
+  df_descriptive |> 
+  mutate(
+    d60 = car::recode(d60, "4=NA"),
+    d60_ordinal = factor(d60, levels = c(1, 2, 3), labels = c("Most of the time", "From time to time", "Almost never/ never"))
+  )
+```
+
+```{r}
+#| echo: false
+
+df_descriptive <- 
+  df_descriptive |> 
+  mutate(
+    qc15_1_ordinal = factor(qc15_1, levels = c(1, 2, 3, 4, 5), labels = c("Totally agree", "Tend to agree", "Tend to disagree", "Totally disagree", "Don't know"))
+  )
+```
+
+```{r}
+#| echo: false
+
+df_country_3 <- 
+  df_descriptive |>
+  mutate(qc15_1_ordinal = case_when(
+    qc15_1_ordinal == "Totally agree" ~ "Totally or tend to agree",
+    qc15_1_ordinal == "Tend to agree" ~ "Totally or tend to agree",
+    TRUE ~ qc15_1_ordinal
+  )) |> 
+  group_by(country_name) |> 
+  summarize(
+    prop_lgb_yes = (sum(qc15_1_ordinal == "Totally or tend to agree") / n())*100, # Calculate proportion with high education
+    prop_qc19_yes = (sum(qc19 == 1) / n())*100)
+
+```
+
+
+```{r}
+#| echo: false
+
+df_descriptive$d25_multinominal <- factor(df_descriptive$d25, labels = c("Rural area", "Small and middle sized town", "Large town", "Don't know"))
+
+# levels = c(1, 2, 3)
 ```
 
 ## Statistical Modeling
@@ -415,13 +508,6 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 ```{r}
 #| echo: false
 
-Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc1_8_ordinal), by = "serialid")
-
-```
-
-```{r}
-#| echo: false
-
 Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes), 
                              df_country_2 %>% select(-prop_qc19_yes), 
                              df_country_3 %>% select(-prop_qc19_yes)), 
@@ -479,7 +565,7 @@ Data_final_Ind <- Individual_data |>
 ## 
 
 -   Once we had our variables confirmed from the descriptive analysis we moved to model these variables using a hierarchical (multilevel) logistic regression modeling.
--   We checked for missing data again, and we considered imputing the
+-   We checked for missing data again, and we considered imputing the age_stopped_education variable because of the variables containing missing data, it made the most sense. We tested this out to see if it would help with the significance of the variable in the upcoming models, however failed to make a difference ultimately.
 
 ```{r}
 #| echo: true
@@ -563,7 +649,7 @@ for (i in 1:length(variables)) {
 plot_grid(plotlist = plots, nrow = 3, ncol = 2)
 ```
 
-The best imputation method seem to be PMM-Imputed distribution
+The best imputation method seem to be PMM-Imputed distribution.
 
 ```{r}
 #| echo: false
@@ -593,62 +679,6 @@ data_reg_ind <- Data_final_Ind |>
 data_reg_ind = data_reg_ind %>%
   filter(!is.na(binary_qc19))
 ```
-
-```{r}
-#| echo: false
-
-logit_model <- glm(binary_qc19 ~ ., family=binomial(link='logit'), data= data_reg_ind)
-
-summary(logit_model)
-```
-
-```{r}
-#| echo: false
-
-logit_model2 <- glm(binary_qc19 ~ male + d11 + political_ideology + Religion_cat + sd1_7_factor +   d60_ordinal + qc15_1_ordinal, 
-                    family = binomial(link = "logit"), data = data_reg_ind)
-
-summary(logit_model2)
-```
-
-```{r}
-logit_model3 <- glm(binary_qc19 ~ male + d11 + I(d11^2)  + political_ideology +                         Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal, 
-                    family = binomial(link = "logit"), data = data_reg_ind)
-
-summary(logit_model3)
-```
-
-```{r}
-exp(coef(logit_model3))
-```
-
-**Male:** The odds of supporting Transgender individuals of being able to change their civil document to match their inner gender are about 25.4% lower for males compared to females, since the odds ratio is 0.74.
-
-**d11:** For each one-year increase in age, the odds of the being supportive of Transgender individuals changing their civil document increase by about 1.9%.However, this support is in a decreasing rate as the relationship is non linear suggesting that at some point, increases in age lead to being less in favor of the target variable.
-
-**political_ideology:** Identifying with the political ideology "Right" decreases the odds of the supporting the change in civil documents by transgender individuals to match their inner gender identity by about 22.8%, compared to the baseline category of political ideology.
-
-**Religion_cat:** Identifying as having Catholics faith have a decrease in the odds of about 21.2%, while identifying as having Jewish faith have an odds increase of about 2.3%, in comparison to the baseline category religion.
-
-**sd1_7_factor:** Responding "No" to having friends or acquaintances who are transgender decreases the odds of the supporting Transgender individuals in being able to change their civil documents by about 45.5%, in comparison to the baseline category.
-
-**d60_ordinal:** Responding that during the last twelve month you had difficulties from time to time in paying your bills, slightly increases the odds of being in favor of letting transgender individuals to change their civil document by about 7.5%, while "Almost never/never" increases the odds by about 26.3%.
-
-**qc15_1_ordinal:** Tending to agree that Gay, lesbian and bisexual people should have the same rights as heterosexual people, decreases the odds by about 61.5%, while "Totally disagree" decreases the odds by about 92.9%.
-
-**Conclusion in the Individual Level**
-
-In our analysis at the individual level, we observe that there are distinct factors influencing support for transgender individual's ability to change their civil documents to match their inner gender identity. The variations in support across the different demographics and beliefs in our data highlight the reality and complexity of public opinion on this issue.
-
-Gender and age play significant roles in this matter, confirming literature cited. For the case of gender, females appear to show higher odds of support compared to males. This could be related to the potential influence of the traditional gender roles and perceptions we have on our society. Moreover, the age variables show that there is a slight increase in support for our dependent variable for each additional year of age. This might suggest that life experiences or generational shifts could gradually influence views towards more inclusive attitudes, however, age influence is minimal in comparison to the other variables represented in our regression.
-
-The categorical variable political Ideology significantly impacts attitudes of support for our target variable. The findings suggest that an alignment towards a more conservative view, results in being less supportive to allow changes in the civil document for transgender individuals. It showed a 22.8% decrease of support for our target variables if the individual identified himself as conservative. Additionally, religious affiliation further complicates the picture, as identifying as Catholic decreases the support for the target variable by about 21,2%. In contrast, individuals identifying with the Jewish faith are slightly more supportive, but, we need to take into consideration that in our data set the proportion of individuals identified as Jewish is really small in comparison to the Catholic faith individuals.
-
-Concentrating on the economic aspect, individuals who established that they had not had difficulties in paying the bill, are slightly more supportive of our dependent variables. Indicating that economic factors may intersect with views on rights and equality.
-
-Furthermore, respondents without contact with transgender individuals show a decreasing support for our dependent variable by 45.5%. The findings underscore the crucial importance of representation and visibility for the transgender community, as well as the development of personal relationships that foster understanding and empathy. These will most likely increase the support for allowing transgender individuals to change their civil documents to match their inner gender identity.
-
-To conclude, in this individual-level analysis, support for our dependent variables is influenced by several complex factors that interplay and shape individuals attitudes. Gender, age, political ideology, and religious affiliation are pivotal in transforming an individual's attitudes. More importantly, we want to point out that the significant impact of lacking personal connections with transgender individuals highlights the need for increased interpersonal connections and broader visibility of transgender issues.
 
 ### Multi-level analysis
 
@@ -723,6 +753,8 @@ summary(glm_model_4)
 ```
 
 ```{r}
+#| echo: true
+
 library(stargazer)
 stargazer(glm_model_4, type = "text", title = "Results of GLMM Analysis", out = "model_results.html")
 
