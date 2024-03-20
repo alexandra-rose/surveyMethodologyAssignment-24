@@ -46,6 +46,9 @@ library(caret)
 library(pdp)
 library(Matrix)
 library(lattice)
+library(mice)
+library(cowplot)
+library(missForest)
 ```
 
 ## Data
@@ -983,8 +986,6 @@ It is important to note that we identify one key variable to not be influential.
 
 **Dependent Variable (qc19)**
 
-It relates to this question:
-
 *Do you think that transgender persons should be able to change their civil documents to match their inner gender identity?*
 
 It takes the values:
@@ -992,6 +993,12 @@ It takes the values:
 -   1 for "Yes"
 
 -   2 for "No"
+
+We decide to change the assigned values:
+
+-   0 for "No"
+
+-   1 for "Yes"
 
 ```{r}
 df_descriptive <- df_descriptive %>%
@@ -1002,6 +1009,8 @@ df_descriptive <- df_descriptive %>%
 Individual_data <- df_descriptive %>%
   select(serialid,country_name, binary_qc19)
 ```
+
+Subsequenty, we preprocess data for our modeling and prediction tasks.
 
 INDIVIDUAL LEVEL
 
@@ -1059,9 +1068,6 @@ df_descriptive <- df_descriptive %>%
   rename(political_ideology = d1_ordinal) 
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, political_ideology), by = "serialid")
-
-
-
 ```
 
 **Religion_cat**
@@ -1253,13 +1259,6 @@ summary(is.na(Data_final_Ind))
 ```
 
 ```{r}
-library(mice)
-library(cowplot)
-library(missForest)
-
-```
-
-```{r}
 
 df_age <- data.frame(
   age_stopped_education = Data_final_Ind$age_stopped_education,
@@ -1431,7 +1430,7 @@ test_model <- glm(binary_qc19 ~ male + d11 + political_ideology +
                     Gdp_per_capita_log + Unemployment,
                   data = Data, family = binomial)
 
-vif_values <- vif(test_model)
+vif_values <- vif(test_model) 
 print(vif_values)
 ```
 
@@ -1649,8 +1648,6 @@ levels(testing$qc15_1_ordinal) <- make.names(levels(testing$qc15_1_ordinal), uni
 # For d60_ordinal
 levels(training$d60_ordinal) <- make.names(levels(training$d60_ordinal), unique = TRUE)
 levels(testing$d60_ordinal) <- make.names(levels(testing$d60_ordinal), unique = TRUE)
-
-
 ```
 
 ### Setting the control function
@@ -1908,7 +1905,13 @@ confusionMatrix(nnPredictedClass, testing$binary_qc19)
 
 The Accuracy levels decrease to 74.12%, as well as, the Specificity to 72.35%. For the Sensitivity there is an improvement to 76.91%.
 
-### Interpretation of the best model features
+### Final Predictive Model
+
+The selected predictive model for our international analysis is Gradient Boosting (GB), which has consistently outperformed all other models in terms of accuracy, except for the case of the Random Forest (RF) . However, RF reports very unbalanced sensitivity and specificity rates.
+
+GB not only has one of the highest accuracy levels but also achieves the most balanced rates of specificity and sensitivity. Such a robust performance profile makes it the optimal choice. As such, we find that this model, is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents.
+
+### Interpretation of GB
 
 Variables Importance
 
@@ -1931,14 +1934,6 @@ plot(rocObj, print.auc = TRUE)
 ```
 
 The AUC value of 0.82 suggests that the Gradient Boosting model has a good measure of separability. Meaning that there is an 82% chance that the model is be able to distinguish between positive class (countries supporting the right of transgender individuals to change their civil documents) and negative class (countries not supporting). The curve is also close to the top left corner of the graph, which means that our model has a high sensitivity (it correctly identifies a high percentage of actual positives) and a high specificity (it correctly identifies a high percentage of actual negatives). In conclusion, the ROC curve indicates that the Gradient Boosting model performs well on our data set with a balance between sensitivity and specificity.
-
-### Final Predictive Model
-
-The selected predictive model for our international analysis is Gradient Boosting (GB), which has consistently outperformed all other models in terms of accuracy, except for the case of the Random Forest (RF) . However, RF has really unbalanced Sensitivity and Specificity rates.
-
-GB not only has one of the highest Accuracy levels but also achieves the most balanced rates of Specificity and Sensitivity. Such a robust performance profile makes it the optimal choice for our data set.
-
-We found that this model, is the most adept and effective at predicting whether countries will support the right of transgender individuals to change their civil documents.
 
 ## LITERATURE
 
