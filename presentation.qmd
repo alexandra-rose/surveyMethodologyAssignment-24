@@ -639,7 +639,9 @@ CrossTable(df_descriptive$adp_general, df_descriptive$qc19_multinominal,
 ```
 :::
 
+
 ## Statistical modeling
+
 
 ```{r}
 #| echo: false
@@ -831,7 +833,6 @@ mice_imputed <- data.frame(
 
 ```
 
-
 ## Imputation
 
 ```{r}
@@ -855,7 +856,6 @@ for (i in 1:length(variables)) {
     theme_classic()
 }
 ```
-
 
 ```{r}
 #| echo: true
@@ -910,7 +910,6 @@ vif_values <- vif(test_model)
 
 ```
 
-
 ```{r}
 #| echo: true
 
@@ -923,6 +922,7 @@ summary(glm_model_2)
 ```
 
 ## 
+
 The model was clearly overfitted. And it suggested we have scaling issue. We fix this and move to remove the non-significant variables.
 
 ```{r}
@@ -942,9 +942,10 @@ summary(glm_model_4)
 library(stargazer)
 ```
 
-
 ## Model (stargazer)
+
 We compared a few models with different transformations and different variables and end up with the best model, to this one.
+
 ```{r}
 stargazer(glm_model_4, type = "text", title = "Results of GLMM Analysis", out = "model_results.html")
 
@@ -968,8 +969,6 @@ BIC(glm_model_4)
 
 -   **Political Ideology**: Conservative alignment correlates with less support for transgender individuals' rights to change civil documents, showing a 22.8% decrease in support.
 
--   **Religious Impact**: Catholic individuals show 21.2% less support, while Jewish individuals are slightly more supportive, though the latter is very small.
-
 ## Key Findings - Social and Economic Factors
 
 -   **Economic Stability**: Individuals with no difficulty paying bills are more supportive, linking economic security with supportive attitudes.
@@ -979,8 +978,6 @@ BIC(glm_model_4)
 ## Key Findings - Social and Economic Factors
 
 -   **Sexual Minority and Support**: Non-members of sexual minorities are less supportive of transgender rights for document changes.
-
--   **Country-Level Factors**: General support for a third gender option and awareness of discrimination correlate with supportive attitudes. 
 
 ## Conclusion
 
