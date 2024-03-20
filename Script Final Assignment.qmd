@@ -1,7 +1,9 @@
 ---
 title: "Final Assignment - Explaining support for transgender rights across Europe"
 author: Frederick Peña, Alexandra Salo and Sofia Villamil
-format: html
+format:
+  html:
+    embed-resources: true
 editor: visual
 editor_options: 
   chunk_output_type: inline
