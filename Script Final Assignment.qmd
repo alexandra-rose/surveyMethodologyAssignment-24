@@ -987,7 +987,7 @@ It relates to this question:
 
 *Do you think that transgender persons should be able to change their civil documents to match their inner gender identity?*
 
-We will take the values:
+It takes the values:
 
 -   1 for "Yes"
 
