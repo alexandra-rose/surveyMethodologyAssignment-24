@@ -639,19 +639,7 @@ CrossTable(df_descriptive$adp_general, df_descriptive$qc19_multinominal,
 ```
 :::
 
-## Statistical Modeling
-
-**Dependent Variable (qc19)**
-
-It relates to this question:
-
-*Do you think that transgender persons should be able to change their civil documents to match their inner gender identity?*
-
-We will take the values:
-
--   1 for "Yes"
-
--   2 for "No"
+## Statistical modeling
 
 ```{r}
 #| echo: false
@@ -785,8 +773,6 @@ Data_final_Ind <- Individual_data |>
   select(serialid,country_name,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
 
 ```
-
-## Getting to the modeling
 
 -   Once we had our variables confirmed from the descriptive analysis we moved to model these variables using a hierarchical (multilevel) logistic regression modeling.
 -   We checked for missing data again, and we considered imputing the age_stopped_education variable because of the variables containing missing data, it made the most sense. We tested this out to see if it would help with the significance of the variable in the upcoming models, however failed to make a difference ultimately. The best imputation method seem to be PMM-Imputed distribution.
@@ -978,6 +964,8 @@ BIC(glm_model_4)
 
 -   **Age Dynamics**: Support increases with age up to a point, then declines, suggesting life experiences or generational shifts might influence attitudes toward inclusivity.
 
+## Key Findings - Demographics and Beliefs
+
 -   **Political Ideology**: Conservative alignment correlates with less support for transgender individuals' rights to change civil documents, showing a 22.8% decrease in support.
 
 -   **Religious Impact**: Catholic individuals show 21.2% less support, while Jewish individuals are slightly more supportive, though the latter is very small.
@@ -987,6 +975,8 @@ BIC(glm_model_4)
 -   **Economic Stability**: Individuals with no difficulty paying bills are more supportive, linking economic security with supportive attitudes.
 
 -   **Contact with Transgender Individuals**: Lack of contact is associated with a 45.5% decrease in support, highlighting the importance of visibility and personal relationships.
+
+## Key Findings - Social and Economic Factors
 
 -   **Sexual Minority and Support**: Non-members of sexual minorities are less supportive of transgender rights for document changes.
 
