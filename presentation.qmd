@@ -663,10 +663,6 @@ df_descriptive <- df_descriptive %>%
 
 Individual_data <- df_descriptive %>%
   select(serialid,country_name, binary_qc19)
-```
-
-```{r}
-#| echo: false
 
 df_descriptive <- df_descriptive %>%
   mutate(
@@ -676,11 +672,6 @@ df_descriptive <- df_descriptive %>%
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, male), by = "serialid")
 
 Individual_data$male <- as.numeric(as.character(Individual_data$male))
-
-```
-
-```{r}
-#| echo: false
 
 df_descriptive <- df_descriptive %>%
   mutate(
@@ -694,18 +685,10 @@ df_descriptive <- df_descriptive %>%
 
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, Cat_age_four,Cat_age_six,Cat_age_seven), by = "serialid")
-```
-
-```{r}
-#| echo: false
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, d11), by = "serialid")
 
 Individual_data$d11 <- as.numeric(as.character(Individual_data$d11))
-```
-
-```{r}
-#| echo: false
 
 df_descriptive$d1_ordinal <- relevel(df_descriptive$d1_ordinal, ref = "Left") 
 df_descriptive$d1_ordinal[df_descriptive$d1_ordinal %in% c("Non-response", "Don't know", 98)] <- NA
@@ -716,13 +699,6 @@ df_descriptive <- df_descriptive %>%
   rename(political_ideology = d1_ordinal) 
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, political_ideology), by = "serialid")
-
-
-
-```
-
-```{r}
-#| echo: false
 
 df_descriptive <- df_descriptive %>%
   mutate(Religion_cat = case_when(
@@ -742,22 +718,12 @@ Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid
 
 Individual_data$Religion_cat <- factor(Individual_data$Religion_cat)
 
-```
-
-```{r}
-#| echo: false
-
 df_descriptive <- df_descriptive %>%
   mutate(sd1_7_factor = factor(sd1_7, 
               levels = c(1, 2, 3, 4),
               labels = c("Yes", "No", "Refusal (SPONTANEOUS)", "Don't know")))
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, sd1_7_factor), by = "serialid")
-
-```
-
-```{r}
-#| echo: false
 
 df_descriptive <- df_descriptive %>%
   mutate(age_stopped_education = case_when(
@@ -772,24 +738,9 @@ df_descriptive <- df_descriptive %>%
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, age_stopped_education), by = "serialid")
 
-```
-
-```{r}
-#| echo: false
-
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, d60_ordinal), by = "serialid")
 
-```
-
-```{r}
-#| echo: false
-
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, sd2_5), by = "serialid")
-
-```
-
-```{r}
-#| echo: false
 
 df_descriptive <- df_descriptive %>%
   mutate(area_type = factor(d25, 
@@ -802,17 +753,7 @@ df_descriptive <- df_descriptive %>%
 
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, area_type), by = "serialid")
 
-```
-
-```{r}
-#| echo: false
-
 Individual_data <- left_join(Individual_data, df_descriptive %>% select(serialid, qc15_1_ordinal), by = "serialid")
-
-```
-
-```{r}
-#| echo: false
 
 Country_level <- reduce(list(df_country_1 %>% select(-prop_qc19_yes), 
                              df_country_2 %>% select(-prop_qc19_yes), 
@@ -824,56 +765,33 @@ Country_level$prop_gndr_bin <- Country_level$prop_gndr_bin / 100
 Country_level$prop_lgb_yes <- Country_level$prop_lgb_yes / 100
 Country_level$prop_dis_wide <- Country_level$prop_dis_wide / 100
 
-```
-
-```{r}
-#| echo: false
-
 Country_level <- left_join(Country_level, df_descriptive %>% 
   select(country_name, trans_legal_protection = adp_general) %>% 
   distinct(), by = "country_name")
-
-```
-
-```{r}
-#| echo: false
 
 Country_level <- left_join(Country_level, df_descriptive %>% 
   select(country_name, Unemployment = `Unemployment. total (% of total labor force) (modeled ILO estimate)`) %>% 
   distinct(), by = "country_name")
 
-```
-
-```{r}
-#| echo: false
-
 Country_level <- left_join(Country_level, df_descriptive %>% 
   select(country_name, Gdp_per_capita = `GDP per capita (current US$)`) %>% 
   distinct(), by = "country_name")
 
-```
-
-```{r}
-#| echo: false
 
 Data_final_Cntry <- Country_level |>
    select(country_name,prop_gndr_bin, prop_dis_wide,prop_lgb_yes, trans_legal_protection, Gdp_per_capita, Unemployment)
-```
-
-```{r}
-#| echo: false
 
 Data_final_Ind <- Individual_data |> 
   select(serialid,country_name,binary_qc19,male, d11, Cat_age_four,Cat_age_six, Cat_age_seven,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
 
 ```
 
-## 
+## Getting to the modeling
 
 -   Once we had our variables confirmed from the descriptive analysis we moved to model these variables using a hierarchical (multilevel) logistic regression modeling.
 -   We checked for missing data again, and we considered imputing the age_stopped_education variable because of the variables containing missing data, it made the most sense. We tested this out to see if it would help with the significance of the variable in the upcoming models, however failed to make a difference ultimately. The best imputation method seem to be PMM-Imputed distribution.
 
-## 
+## Check variables with missing data
 
 ```{r}
 #| echo: true
@@ -887,11 +805,6 @@ summary(is.na(Data_final_Ind))
 library(mice)
 library(cowplot)
 library(missForest)
-
-```
-
-```{r}
-#| echo: false
 
 df_age <- data.frame(
   age_stopped_education = Data_final_Ind$age_stopped_education,
@@ -932,10 +845,11 @@ mice_imputed <- data.frame(
 
 ```
 
-## 
+
+## Imputation
 
 ```{r}
-#| echo: true
+#| echo: false
 
 # Define variables, titles, and colors for the updated set of distributions
 variables <- c("original", "imputed_pmm", "imputed_cart", "imputed_lasso","imputed_rf")
@@ -954,6 +868,11 @@ for (i in 1:length(variables)) {
     ggtitle(titles[i]) +
     theme_classic()
 }
+```
+
+
+```{r}
+#| echo: true
 
 # Combine the new set of plots into a grid
 plot_grid(plotlist = plots, nrow = 3, ncol = 2)
@@ -964,10 +883,7 @@ plot_grid(plotlist = plots, nrow = 3, ncol = 2)
 
 Data_final_Ind <- Data_final_Ind %>%
   left_join(mice_imputed %>% select(serialid, imputed_pmm), by = "serialid")
-```
 
-```{r}
-#| echo: false
 
 Data_final_Ind$age_stopped_education <- ifelse(is.na(Data_final_Ind$age_stopped_education), 
                                                Data_final_Ind$imputed_pmm, 
@@ -975,10 +891,6 @@ Data_final_Ind$age_stopped_education <- ifelse(is.na(Data_final_Ind$age_stopped_
 
 Data_final_Ind <- Data_final_Ind %>% select(-imputed_pmm)
 
-```
-
-```{r}
-#| echo: false
 
 data_reg_ind <- Data_final_Ind |> 
   select(binary_qc19,male, d11 ,political_ideology,Religion_cat , sd1_7_factor, age_stopped_education, d60_ordinal,sd2_5,area_type,qc15_1_ordinal)
@@ -1000,10 +912,6 @@ Data <- left_join(Data_final_Ind, Data_final_Cntry, by = "country_name")
 #taking logs of GDP per capita
 Data$Gdp_per_capita_log <- log(Data$Gdp_per_capita)
 
-```
-
-```{r}
-#| echo: false
 
 test_model <- glm(binary_qc19 ~ male + d11 + political_ideology +
                     Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
@@ -1012,8 +920,10 @@ test_model <- glm(binary_qc19 ~ male + d11 + political_ideology +
                   data = Data, family = binomial)
 
 vif_values <- vif(test_model)
-print(vif_values)
+#print(vif_values)
+
 ```
+
 
 ```{r}
 #| echo: true
@@ -1027,7 +937,6 @@ summary(glm_model_2)
 ```
 
 ## 
-
 The model was clearly overfitted. And it suggested we have scaling issue. We fix this and move to remove the non-significant variables.
 
 ```{r}
@@ -1036,23 +945,6 @@ The model was clearly overfitted. And it suggested we have scaling issue. We fix
 Data$d11 <- scale(Data$d11, center = TRUE, scale = TRUE)
 Data$Gdp_per_capita_log <- scale(Data$Gdp_per_capita_log, center = TRUE, scale = TRUE)
 Data$Unemployment <- scale(Data$Unemployment, center = TRUE, scale = TRUE) 
-
-```
-
-```{r}
-#| echo: false
-
-glm_model_3 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
-               Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
-               prop_gndr_bin + prop_lgb_yes + prop_dis_wide + trans_legal_protection +
-               Gdp_per_capita_log + Unemployment + (1 | country_name),
-               data = Data, family = binomial, 
-               control = glmerControl(optimizer = "bobyqa", optCtrl = list(maxfun = 100000)))
-summary(glm_model_3)
-```
-
-```{r}
-#| echo: false
 
 glm_model_4 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
                Religion_cat + sd1_7_factor + d60_ordinal + qc15_1_ordinal +
@@ -1064,18 +956,16 @@ summary(glm_model_4)
 library(stargazer)
 ```
 
-## Model (stargazer)
 
+## Model (stargazer)
+We compared a few models with different transformations and different variables and end up with the best model, to this one.
 ```{r}
 stargazer(glm_model_4, type = "text", title = "Results of GLMM Analysis", out = "model_results.html")
 
 ```
 
-## 
-
-We compared some models with different transformations and different variables and end up with the best model, to this one above with following results:
-
 ```{r}
+#| echo: false
 
 AIC(glm_model_4)
 BIC(glm_model_4)
@@ -1090,7 +980,7 @@ BIC(glm_model_4)
 
 -   **Political Ideology**: Conservative alignment correlates with less support for transgender individuals' rights to change civil documents, showing a 22.8% decrease in support.
 
--   **Religious Impact**: Catholic individuals show 21.2% less support, while Jewish individuals are slightly more supportive, though the latter group is smaller in the dataset.
+-   **Religious Impact**: Catholic individuals show 21.2% less support, while Jewish individuals are slightly more supportive, though the latter is very small.
 
 ## Key Findings - Social and Economic Factors
 
@@ -1100,17 +990,11 @@ BIC(glm_model_4)
 
 -   **Sexual Minority and Support**: Non-members of sexual minorities are less supportive of transgender rights for document changes.
 
--   **Country-Level Factors**: General support for a third gender option and awareness of discrimination correlate with supportive attitudes. Higher unemployment rates within a country are unexpectedly associated with more support.
+-   **Country-Level Factors**: General support for a third gender option and awareness of discrimination correlate with supportive attitudes. 
 
 ## Conclusion
 
 -   **Cross-Country Differences**: Variations in support for transgender rights across countries are influenced by demographics (gender, age), political and religious affiliations, social determinants, awareness of LGBTI issues, and economic conditions.
-
--   Model
-
--   we didnt put it because, our assumption is that individual level variables also explain cross country differences because demographics are different across countries
-
--   but because individual level variables
 
 ## Prediction
 
