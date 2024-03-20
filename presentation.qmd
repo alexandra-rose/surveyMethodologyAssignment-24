@@ -1188,20 +1188,6 @@ levels(testing$qc15_1_ordinal) <- make.names(levels(testing$qc15_1_ordinal), uni
 levels(training$d60_ordinal) <- make.names(levels(training$d60_ordinal), unique = TRUE)
 levels(testing$d60_ordinal) <- make.names(levels(testing$d60_ordinal), unique = TRUE)
 
-ctrl <- trainControl(method = "repeatedcv", 
-                     number = 10,
-                     classProbs = T,
-                     summaryFunction=twoClassSummary,
-                     verboseIter = T)
-set.seed(234)
-rfFit <- train(ModelS, 
-                  data = training,
-                  method = "rf",   
-                  preProc=c('scale','center'),
-                  tuneGrid = data.frame(mtry = 5), # after runing a tuneLength=10 the results gave that the optimal parameter for this model is that.
-                  metric="ROC",
-                  trControl = ctrl)
-
 library(doParallel)
 numCores <- detectCores() - 1
 registerDoParallel(cores=numCores)
@@ -1252,7 +1238,7 @@ confusionMatrix(prediction, testing$binary_qc19)
 ## Variables Importance
 
 ```{r}
-gbm_imp <- varImp(rfFit, scale = F)
+gbm_imp <- varImp(gbmFit, scale = F)
 plot(gbm_imp, scales = list(y = list(cex = .95)))
 ```
 

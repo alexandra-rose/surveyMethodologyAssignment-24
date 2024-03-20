@@ -1824,6 +1824,7 @@ ctrl <- trainControl(method = "repeatedcv",
 
 ```{r}
 # custom grid to make the computational process run within less than 8 hours, we tune in each parameter and found this one where the optimal onces.
+set.seed(456)
 tune_grid_gbm <- expand.grid(
     nrounds = c(100, 600),  
     max_depth = 4,          
@@ -1834,7 +1835,7 @@ tune_grid_gbm <- expand.grid(
     subsample = 0.8         
 )
 
-set.seed(456)
+
 
 # Update the train function call to use the new tune grid
 gbmFit <- train(ModelS, 
@@ -1866,33 +1867,6 @@ confusionMatrix(prediction, testing$binary_qc19)
 ```
 
 This model is the best so far in terms of balance between Specificity and Sensitivity. And Accuracy is at 75.34%.
-
-Variables Importance
-
-```{r}
-gbm_imp <- varImp(rfFit, scale = F)
-plot(gbm_imp, scales = list(y = list(cex = .95)))
-```
-
-Partial dependence plot for the two most important variables
-
-```{r}
-partial(gbmFit, pred.var = "prop_gndr_bin", plot = TRUE, rug = TRUE)
-partial(gbmFit, pred.var = "d11", plot = TRUE, rug = TRUE)   
-```
-
-For the gndr_bin plot, it shows that as the value of prop_gndr_bin increases, the predicted value (yhat) tends to decrease, meaning that there's a negative association between prop_gndr_bin and the predicted outcome.
-
-For the d11 plot, it shows a more complex, non-linear relationship. This is something we address by adding the quadratic age term.
-
-Both plot further evidence the insight we have gatherer through this analysis.
-
-```{r}
-rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
-plot(rocObj, print.auc = TRUE)
-```
-
-The AUC value of 0.82 suggests that the Gradient Boosting model has a good measure of separability. Meaning that there is an 82% chance that the model is be able to distinguish between positive class (countries supporting the right of transgender individuals to change their civil documents) and negative class (countries not supporting). The curve is also close to the top left corner of the graph, which means that our model has a high sensitivity (it correctly identifies a high percentage of actual positives) and a high specificity (it correctly identifies a high percentage of actual negatives). In conclusion, the ROC curve indicates that the Gradient Boosting model performs well on our data set with a balance between sensitivity and specificity.
 
 ### Neural Networks
 
@@ -1934,12 +1908,29 @@ confusionMatrix(nnPredictedClass, testing$binary_qc19)
 
 The Accuracy levels decrease to 74.12%, as well as, the Specificity to 72.35%. For the Sensitivity there is an improvement to 76.91%.
 
+### Interpretation of the best model features
+
+Variables Importance
+
 ```{r}
-rocObj <- roc(response = testing$binary_qc19, predictor = nnProb[,"Yes"])
+gbm_imp <- varImp(gbmFit, scale = F)
+plot(gbm_imp, scales = list(y = list(cex = .95)))
+```
+
+Partial dependence plot for the most important variable
+
+```{r}
+partial(gbmFit, pred.var = "prop_gndr_bin", plot = TRUE, rug = TRUE)
+```
+
+The plot indicates that the relationship between prop_gndr_bin and the predicted outcome is not uniformly positive; at certain levels, an increase in prop_gndr_bin correlates with a decreased predicted outcome. This contrasts with the positive correlation suggested by the regression analysis, highlighting the divergent insights that can emerge from machine learning versus traditional regression analysis. It also suggests the presence of interaction effects with prop_gndr_bin that may lead to positive impacts on the predicted outcome, which are not captured in this partial dependence plot.
+
+```{r}
+rocObj <- roc(response = testing$binary_qc19, predictor = gbmProb[,"Yes"])
 plot(rocObj, print.auc = TRUE)
 ```
 
-This plot is further evidence that the best predictive model is the gradient boosting one. As it has a higher AUC, indicating a better overall performance in terms of distinguishing between the two classes of our dependent variable.
+The AUC value of 0.82 suggests that the Gradient Boosting model has a good measure of separability. Meaning that there is an 82% chance that the model is be able to distinguish between positive class (countries supporting the right of transgender individuals to change their civil documents) and negative class (countries not supporting). The curve is also close to the top left corner of the graph, which means that our model has a high sensitivity (it correctly identifies a high percentage of actual positives) and a high specificity (it correctly identifies a high percentage of actual negatives). In conclusion, the ROC curve indicates that the Gradient Boosting model performs well on our data set with a balance between sensitivity and specificity.
 
 ### Final Predictive Model
 
