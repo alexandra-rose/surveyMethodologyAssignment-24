@@ -1,6 +1,7 @@
 ---
-title: "Group presentation"
-date: 2024-01-24
+title: "Group Presentation"
+subtitle: "Survey Methodology II"
+date: 2024-03-20
 author: "Frederick, Sofia, Alex"
 format: 
   revealjs:
@@ -13,13 +14,13 @@ editor: visual
 logo: https://www.rstudio.com/wp-content/uploads/2018/10/RStudio-Logo-Flat.png
 ---
 
-## Data cleaning- test test
+## Data cleaning
 
 -   Cleaning data
 
 -   Tidy data
 
--   Joining datasets
+-   Joining datasets (World Bank Data \| Trans Rights Indicator Project)
 
 ```{r Data cleaning}
 #| echo: false
@@ -52,6 +53,9 @@ library(caret)
 library(pdp)
 library(Matrix)
 library(lattice)
+library(mice)
+library(cowplot)
+library(missForest)
 
 
 data <- read_dta("Data/ZA7575.dta")
@@ -639,9 +643,7 @@ CrossTable(df_descriptive$adp_general, df_descriptive$qc19_multinominal,
 ```
 :::
 
-
 ## Statistical modeling
-
 
 ```{r}
 #| echo: false
@@ -776,8 +778,10 @@ Data_final_Ind <- Individual_data |>
 
 ```
 
--   Once we had our variables confirmed from the descriptive analysis we moved to model these variables using a hierarchical (multilevel) logistic regression modeling.
--   We checked for missing data again, and we considered imputing the age_stopped_education variable because of the variables containing missing data, it made the most sense. We tested this out to see if it would help with the significance of the variable in the upcoming models, however failed to make a difference ultimately. The best imputation method seem to be PMM-Imputed distribution.
+-   modelling variables from descriptive analysis using a hierarchical (multilevel) logistic regression modeling
+-   checked for missing data, and considered imputing the age_stopped_education variable because out of the variables containing missing data, it made the most sense.
+-   No palpable difference ultimately.
+-   PMM-Imputation the best imputation method (according to distribution)
 
 ## Check variables with missing data
 
@@ -888,7 +892,7 @@ data_reg_ind = data_reg_ind %>%
 
 ## Multi-level analysis
 
-In order to do the multi-leveled analysis we used a generalized linear mixed-effects model (GLMM), where country_name was the variable used as the random effects.
+-   generalized linear mixed-effects model (GLMM), where country_name was the variable used as the random effects.
 
 ```{r}
 #| echo: false
@@ -921,10 +925,6 @@ glm_model_2 <- glmer(binary_qc19 ~ male + d11 + I(d11^2) + political_ideology +
 summary(glm_model_2)
 ```
 
-## 
-
-The model was clearly overfitted. And it suggested we have scaling issue. We fix this and move to remove the non-significant variables.
-
 ```{r}
 #| echo: false
 
@@ -942,13 +942,10 @@ summary(glm_model_4)
 library(stargazer)
 ```
 
-## Model (stargazer)
-
-We compared a few models with different transformations and different variables and end up with the best model, to this one.
+## Best model
 
 ```{r}
 stargazer(glm_model_4, type = "text", title = "Results of GLMM Analysis", out = "model_results.html")
-
 ```
 
 ```{r}
@@ -956,32 +953,25 @@ stargazer(glm_model_4, type = "text", title = "Results of GLMM Analysis", out = 
 
 AIC(glm_model_4)
 BIC(glm_model_4)
+
 #glm_model_4 seems to show the besT lowest AIC and BIC
 ```
 
-## Key Findings - Demographics and Beliefs
+## Key Findings - Demographics and Beliefs {style="font-size: 90%;"}
 
 -   **Gender Influence**: Females show higher odds of support compared to males, potentially reflecting societal gender roles and perceptions.
-
 -   **Age Dynamics**: Support increases with age up to a point, then declines, suggesting life experiences or generational shifts might influence attitudes toward inclusivity.
-
-## Key Findings - Demographics and Beliefs
-
 -   **Political Ideology**: Conservative alignment correlates with less support for transgender individuals' rights to change civil documents, showing a 22.8% decrease in support.
 
-## Key Findings - Social and Economic Factors
+## Key Findings - Social and Economic Factors {style="font-size: 90%;"}
 
 -   **Economic Stability**: Individuals with no difficulty paying bills are more supportive, linking economic security with supportive attitudes.
-
 -   **Contact with Transgender Individuals**: Lack of contact is associated with a 45.5% decrease in support, highlighting the importance of visibility and personal relationships.
-
-## Key Findings - Social and Economic Factors
-
 -   **Sexual Minority and Support**: Non-members of sexual minorities are less supportive of transgender rights for document changes.
 
 ## Conclusion
 
--   **Cross-Country Differences**: Variations in support for transgender rights across countries are influenced by demographics (gender, age), political and religious affiliations, social determinants, awareness of LGBTI issues, and economic conditions.
+-   **Cross-Country Differences**: Variations in support for transgender rights across countries are influenced by demographics (such as age), political and religious affiliations, social determinants, awareness of LGBTI issues, and economic conditions.
 
 ## Prediction
 
